@@ -1,1 +1,7 @@
 .idea
+Conf/__pycache__
+Spatial/__pycache__
+Spatial/Libs/__pycache__
+SpationTemporalSimulation/NNModels/__pycache__
+Testing/.cache
+Utils/__pycache__

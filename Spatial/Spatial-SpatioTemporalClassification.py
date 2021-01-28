@@ -81,6 +81,7 @@ f = np.concatenate(f)
 
 # preprocessing
 norm_scaller = StandardScaler()
+#reduce the dimension of gaze-adjustmen features
 scaler = make_pipeline(norm_scaller,
                        NeighborhoodComponentsAnalysis(n_components=5,
                                                       random_state=0))
@@ -92,29 +93,27 @@ X_spatial_norm = norm_scaller.fit_transform(X_spatial, Y)
 # combine features
 X_norm = np.concatenate([X_norm, X_spatial_norm], -1)
 #save features to csv
-np.savetxt("features.csv", X_norm, delimiter=",")
-np.savetxt("labels.csv", Y, delimiter=",")
-kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=0)
+# np.savetxt("features.csv", X_norm, delimiter=",")
+# np.savetxt("labels.csv", Y, delimiter=",")
+
+
+
 
 # compute Mutual Information
 mi = mutual_info_classif(X_norm, Y)
 print(mi)
-# for i in range(len(labels)):
-#     print(mi[(i*7):(i+1)*7])
-# print("MI of %s = %f" %(labels[i], np.sum(mi[(i*7):(i+1)*7])))
-# parameters = {'n_estimators': [25, 50, 75], 'max_samples': [0.3, 0.5, 0.7], 'max_features': [0.3, 0.5, 0.7]}
-# rf = ExtraTreesClassifier(random_state=0, class_weight='balanced', bootstrap=True)
 
-parameters = {'C': [0.25]}
+#find the optimal value for the SVM
+parameters = {'C': [0.25, 0.5]}
 svc = SVC(random_state=0,  kernel="linear", class_weight="balanced")
-
 clf = GridSearchCV(svc, parameters)
 clf.fit(X_norm, Y)
 best_params = clf.best_params_
-
-# compute features importance
 print(best_params)
 acc = []
+
+#perform k-fold cross validation
+kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=0)
 for train_index, test_index in kf.split(X_norm, Y):
     X_train = X_norm[train_index]
     X_test = X_norm[test_index]
@@ -122,22 +121,14 @@ for train_index, test_index in kf.split(X_norm, Y):
     Y_train = Y[train_index]
     Y_test = Y[test_index]
 
-    # clf = AdaBoostClassifier(n_estimators=100, algorithm='SAMME', base_estimator=estimator,random_state=0)
-    # best_model = RandomForestClassifier(n_estimators=best_params["n_estimators"],
-    #                                   max_features=best_params["max_features"], max_samples=best_params["max_samples"],
-    #                                   random_state=0, class_weight='balanced', bootstrap=True)
 
     best_model = SVC(C= best_params["C"],random_state=0, kernel="linear", class_weight="balanced")
-    best_model.fit(X_train, Y_train)
-    score = best_model.score(X_test, Y_test)
+    best_model.fit(X_train, Y_train) #fit the data into the model
+    score = best_model.score(X_test, Y_test) #test the model with test data
     acc.append(score)
     print(score)
-    print(classification_report(Y_test, best_model.predict(X_test)))
-    print(confusion_matrix(Y_test, best_model.predict(X_test)))
-    # print(clf.predict(X_test))
-    # print(clf.predict_proba(X_test))
-    # print(Y_test)
+    print(classification_report(Y_test, best_model.predict(X_test))) #compute precision recall and F1-score
+    print(confusion_matrix(Y_test, best_model.predict(X_test))) #compute confusion matrix
     print(f[test_index])
-    # print(clf.feature_importances_)
 
-print("AVG-Classification %f" %(np.mean(acc)) )
+print("AVG-Classification %f" %(np.mean(acc)) ) #average ACC

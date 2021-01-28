@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from Utils.Lib import createDir, computeVelocity, movingAverage, euclidianDistT, anglesEstimation, removeNoObjectData, gazeEntropy, spectralEntropy
+from Utils.Lib import createDir, computeVelocity, euclidianDistT, anglesEstimation, removeNoObjectData, gazeEntropy, spectralEntropy
 from Spatial.Libs.DataProcessor import DataProcessor
 from Utils.DataReader import DataReader
 import numpy as np
@@ -25,8 +25,8 @@ removal = OutliersRemoval(cutoff=CUT_OFF)
 
 # edges
 xedges, yedges = np.arange(0, 101, 1), np.arange(0, 101, 1)
-x_grid, y_grid = np.mgrid[0:1:100j, 0:1:100j]
-positions = np.vstack([x_grid.ravel(), y_grid.ravel()])
+# x_grid, y_grid = np.mgrid[0:1:100j, 0:1:100j]
+# positions = np.vstack([x_grid.ravel(), y_grid.ravel()])
 for path in zip(game_paths, gaze_paths, result_paths):
     game_path = path[0]
     gaze_path = path[1]
@@ -35,7 +35,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
     # read game data
 
     data_game, game_f_names = reader.readGameResults(game_path)
-    data_game = removal.transformGameResult(data_game)
+    data_game = removal.transformGameResult(data_game) #remove response with RT less that TH
     data_gaze, data_gaze_obj, gaze_f_names = reader.readGazeData(gaze_path, downsample=True)
 
     # data process
@@ -50,12 +50,12 @@ for path in zip(game_paths, gaze_paths, result_paths):
     data = pd.DataFrame(columns=columns)
     i = 0
     for d in zip(data_game, data_gaze, data_gaze_obj, game_f_names):
-        game = d[0]
-        gaze_data = d[1]
-        gaze_obj_data = d[2]
-        f_name = d[3]
+        game = d[0] #game data
+        gaze_data = d[1] #all gaze data
+        gaze_obj_data = d[2] #gaze data when stimulus appear
+        f_name = d[3] #file name
 
-        area = process.convexHullArea(gaze_data)
+        area = process.convexHullArea(gaze_data) # compute gaze area
 
         # compute RT, RTVar, Correct and Incorrect Percentage
         response = game[game["ResponseTime"] != -1]
@@ -76,18 +76,19 @@ for path in zip(game_paths, gaze_paths, result_paths):
         time = gaze_data["Time"].values
         gazex = gaze_data["GazeX"].values
         gazey = gaze_data["GazeY"].values
-        velocity_x = computeVelocity(time, gazex, freq)
-        velocity_y = computeVelocity(time, gazey, freq)
+        velocity_x = computeVelocity(time, gazex, freq) #velocity along X-axis
+        velocity_y = computeVelocity(time, gazey, freq) #velocity along Y-axis
 
         # compute sample entropy
         gaze_avg = np.array([gazex, gazey]).transpose()
-        dist_avg = euclidianDistT(gaze_avg, skip=2)
-        angle_avg = anglesEstimation(gaze_avg, skip=2)
+        dist_avg = euclidianDistT(gaze_avg, skip=2) #compute euclidian distance for consecutive gaze
+        angle_avg = anglesEstimation(gaze_avg, skip=2) #compute angle distance for consecutive gaze
 
+        #compute sample entropy of gaze distance and angle (1e-25 to avoid NAN)
         sampen_dist = sampen(dist_avg, freq) + 1e-25
         sampen_angle = sampen(angle_avg, freq) + 1e-25
 
-        # compute entropy
+        # compute spatial entropy
         H, _, _ = np.histogram2d(gazex * 100, gazey * 100, bins=(xedges, yedges), density=True)
 
         p = H.flatten()
@@ -120,8 +121,8 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
             #the embeding is 6 so it requires minimum lenth of 8
             if len(gaze_to_obj) > 10:
-                sampen_gaze_obj = sampen(gaze_to_obj, freq) + 1e-25
-                spectral_entropy  = spectralEntropy(gaze_samp_avg - obj_samp_avg)
+                sampen_gaze_obj = sampen(gaze_to_obj, freq) + 1e-25 #sample entropy of gaze-to-obj
+                spectral_entropy  = spectralEntropy(gaze_samp_avg - obj_samp_avg) #spectral entropy
                 if np.isinf(sampen_gaze_obj) == False:
                     sampen_gaze_objs.append(sampen_gaze_obj)
                     spectral_entropys.append(spectral_entropy)
@@ -139,8 +140,10 @@ for path in zip(game_paths, gaze_paths, result_paths):
                     fixation_times.append(fix_time)
         fixation_times = np.array(fixation_times) * 1000
         #  end compute fixation time
-        if len (sampen_gaze_objs) == 0:
+        if len (sampen_gaze_objs) == 0 or len (spectral_entropys) == 0:
             print(f_name)
+
+        #add the data to DataFrame
         if len(RT) > 2:
             data = data.append(
                 {"id": f_name, "Go": Go_response, "GoError": Go_E_reponse, "NoGo": NoGo_reponse,
@@ -161,6 +164,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
             i += 1
 
+    #save dataframe
     result_summary_path = result_path + "summary\\"
     createDir(result_summary_path)
     data.to_csv(os.path.join(result_summary_path, "summary_response_new.csv"), columns=columns, index=False)

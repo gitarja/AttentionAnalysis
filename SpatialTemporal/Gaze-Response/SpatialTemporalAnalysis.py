@@ -26,9 +26,9 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
     #read game data
     reader = DataReader()
-    data_game, game_f_names = reader.readGameResults(game_path)
-    data_game = removal.transformGameResult(data_game)
-    data_gaze, data_gaze_obj, gaze_f_names = reader.readGazeData(gaze_path, downsample=True)
+    data_game, game_f_names = reader.readGameResults(game_path) #read game results
+    data_game = removal.transformGameResult(data_game) #remove outlier
+    data_gaze, data_gaze_obj, gaze_f_names = reader.readGazeData(gaze_path, downsample=True) #read gaze data
 
 
     if not game_f_names.__eq__(gaze_f_names):
@@ -60,12 +60,15 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
             response_time = data["ResponseTime"]
             if (data["ResponseTime"] == -1) | (data["ResponseTime"] <= data["SpawnTime"]):
+                # when the response is NoGo Positive or Go Negative assume that the subject look at the
+                # stimulus for 700 ms
+
                 response_time = data["SpawnTime"] + 0.7
-
             gaze_t = gaze[(gaze["Time"] >= data["SpawnTime"]) & (gaze["Time"] <= response_time)]
-            distances = gaze_t["Distance"].values
+            distances = gaze_t["Distance"].values #distance between gaze and object
             times = gaze_t["Time"].values
-
+            # only proceed the distance longer than threshold
+            # shorter distance may cause error
             if len(distances) >= MIN_D_N:
 
                 #response type
@@ -85,10 +88,12 @@ for path in zip(game_paths, gaze_paths, result_paths):
                 last_dist.append(distances[-1])
 
                 try:
+                    #fit the data into the model
                     params, loglike_score = arParams(distances, times=times, min_len=MIN_D_N, maxlag=MAX_LAG)
                     mean_coeff = np.average(params)
                     ar_params.append(params)
                 except:
+                    #when fail set to zeros and will not be proceed further
                     mean_coeff = 0
                     ar_params.append([0, 0, 0, 0, 0, 0])
                     samp_e_list.append(0)
