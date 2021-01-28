@@ -45,7 +45,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
     columns = ["id", "Go", "GoError", "NoGo", "NoGoError", "RT", "RTVar", "Trajectory Area", "VelocityX_avg",
                "VelocityY_avg", "VelocityX_std", "VelocityY_std", "Fixation_avg", "Fixation_std", "Sampen_dist",
-               "Sampen_angle", "Spatial_entropy", "GazeObj_entropy",  "Sampen_gaze_obj", "Spectral_entropy"]
+               "Sampen_angle", "Spatial_entropy", "GazeObj_entropy",  "Sampen_gaze_obj", "Spectral_entropy", "Spectral_entropy2"]
 
     data = pd.DataFrame(columns=columns)
     i = 0
@@ -100,6 +100,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
         gaze_point = gaze_obj[:, 1:3]
         obj_point = gaze_obj[:, 3:]
         gaze_obj_en = gazeEntropy(gaze_point - obj_point)
+        spectral_entropy2 = spectralEntropy(gaze_point - obj_point)
 
 
         #  start compute fixation time avg sample dist and sample angle
@@ -160,6 +161,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
                  "GazeObj_entropy": gaze_obj_en,
                  "Sampen_gaze_obj": np.average(sampen_gaze_objs),
                  "Spectral_entropy" : np.average(spectral_entropys),
+                "Spectral_entropy2": spectral_entropy2,
                  }, ignore_index=True)
 
             i += 1
