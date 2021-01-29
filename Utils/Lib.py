@@ -32,10 +32,10 @@ def euclidianDist(x1, x2):
     :param x2:
     :return:
     '''
-    dist = np.linalg.norm(x1 - x2)
+    dist =np.sqrt(np.sum(np.power(x1-x2, 2), -1))
     return dist
 
-def euclidianDistT(x, skip=3):
+def euclidianDistT(x, time=None, skip=3):
     ''' compute the euclidian distance for the series
     :param x: must be series > skip + 3
     :param skip:
@@ -69,18 +69,38 @@ def computeVelocity(time, gaze, n):
     '''
     :param time: a series contains time
     :param gaze: a series contains gaze values
-    :param n: the stride
-    :return: series of velocity
+    :param n: the window length
+    :return: series of velocity, time
     '''
     velc = []
+    times = []
     for i in range(n, len(time), n):
         dt = (time[i] - time[i - n])
-        gt = (gaze[i] - gaze[i - n])
+        gt = np.linalg.norm(gaze[i] - gaze[i - n])
 
-        if (dt < 0.1):
+        if (dt <= 0.1):
             velc.append(np.abs(gt) / dt)
+            times.append(time[i])
     # print(np.max([np.abs((gaze[i] - gaze[i - n])) for i in range(n, len(time), n)]))
-    return velc
+    return velc, times
+
+
+def computeAcceleration(time, velocity, n):
+    '''
+    :param dt: time difference
+    :param velocity: a series of velocity
+    :param n: the window lenght
+    :return: series of acceleration
+    '''
+    accs = []
+    for i in range(n, len(velocity), n):
+        dt = (time[i] - time[i - n])
+        vt = (velocity[i] - velocity[i - n])
+        if (dt <= 0.1):
+            accs.append((vt/dt) + 1e-25) #add 1-e25 to prevent zero
+
+    return accs
+
 
 
 
@@ -147,7 +167,7 @@ def filterFixation(fixation):
     fixation_list = []
     fixation_g = []
     for i in range(1, len(fixation)):
-        if (fixation[i-1] == True) & (fixation[i] == False):
+        if (fixation[i-1] == True) and (fixation[i] == False):
             fixation_list.append(fixation_g)
             fixation_g = []
         if fixation[i]:
@@ -188,7 +208,7 @@ def spectralEntropy(xy, fs=72):     # defaults to downsampled frequency
     :param fs:
     :return:
     '''
-    _, spx = welch(xy[:,0], fs, nperseg=10)     # scipy.signal.welch
-    _, spy = welch(xy[:,1], fs, nperseg=10)     # equal spectrum discretization for x, y
+    _, spx = welch(xy[:,0], fs, nperseg=32)     # scipy.signal.welch
+    _, spy = welch(xy[:,1], fs, nperseg=32)     # equal spectrum discretization for x, y
     return entropy(spx + spy)/np.log(len(_))  # scipy.stats.entropy
 

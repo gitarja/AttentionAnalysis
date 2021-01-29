@@ -1,6 +1,7 @@
 import pandas as pd
 import os
-from Utils.Lib import createDir, computeVelocity, euclidianDistT, anglesEstimation, removeNoObjectData, gazeEntropy, spectralEntropy
+from Utils.Lib import createDir, computeVelocity, euclidianDistT, anglesEstimation, removeNoObjectData, gazeEntropy, \
+    spectralEntropy, computeAcceleration
 from Spatial.Libs.DataProcessor import DataProcessor
 from Utils.DataReader import DataReader
 import numpy as np
@@ -35,7 +36,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
     # read game data
 
     data_game, game_f_names = reader.readGameResults(game_path)
-    data_game = removal.transformGameResult(data_game) #remove response with RT less that TH
+    data_game = removal.transformGameResult(data_game)  # remove response with RT less that TH
     data_gaze, data_gaze_obj, gaze_f_names = reader.readGazeData(gaze_path, downsample=True)
 
     # data process
@@ -43,19 +44,32 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
     # dataframe for the results
 
-    columns = ["id", "Go", "GoError", "NoGo", "NoGoError", "RT", "RTVar", "Trajectory Area", "VelocityX_avg",
-               "VelocityY_avg", "VelocityX_std", "VelocityY_std", "Fixation_avg", "Fixation_std", "Sampen_dist",
-               "Sampen_angle", "Spatial_entropy", "GazeObj_entropy",  "Sampen_gaze_obj", "Spectral_entropy", "Spectral_entropy2"]
+    columns = ["id", "Go", "GoError" , "NoGo",
+                 "NoGoError", "RT", "RTVar", "Trajectory Area",
+                 "Velocity_avg",
+                 "Velocity_std",
+                 "Acceleration_avg",
+                 "Acceleration_std",
+                 "Fixation_avg",
+                 "Fixation_std",
+                 "Sampen_dist",
+                 "Sampen_angle",
+                 "Spatial_entropy",
+                 "GazeObj_entropy",
+                 "Sampen_gaze_obj",
+                 "Spectral_entropy",
+                 "Sampen_velocity",
+                 "Sampen_acceleration"]
 
     data = pd.DataFrame(columns=columns)
     i = 0
     for d in zip(data_game, data_gaze, data_gaze_obj, game_f_names):
-        game = d[0] #game data
-        gaze_data = d[1] #all gaze data
-        gaze_obj_data = d[2] #gaze data when stimulus appear
-        f_name = d[3] #file name
+        game = d[0]  # game data
+        gaze_data = d[1]  # all gaze data
+        gaze_obj_data = d[2]  # gaze data when stimulus appear
+        f_name = d[3]  # file name
 
-        area = process.convexHullArea(gaze_data) # compute gaze area
+        area = process.convexHullArea(gaze_data)  # compute gaze area
 
         # compute RT, RTVar, Correct and Incorrect Percentage
         response = game[game["ResponseTime"] != -1]
@@ -72,21 +86,24 @@ for path in zip(game_paths, gaze_paths, result_paths):
         RT_series.to_csv(result_path + f_name + "_RTSeries.csv")
 
         # compute gaze velocity
-        freq = int(FREQ_GAZE / 10)
+        freq = int(FREQ_GAZE / 20)
         time = gaze_data["Time"].values
         gazex = gaze_data["GazeX"].values
         gazey = gaze_data["GazeY"].values
-        velocity_x = computeVelocity(time, gazex, freq) #velocity along X-axis
-        velocity_y = computeVelocity(time, gazey, freq) #velocity along Y-axis
-
-        # compute sample entropy
         gaze_avg = np.array([gazex, gazey]).transpose()
-        dist_avg = euclidianDistT(gaze_avg, skip=2) #compute euclidian distance for consecutive gaze
-        angle_avg = anglesEstimation(gaze_avg, skip=2) #compute angle distance for consecutive gaze
+        velocity, time_velocity = computeVelocity(time, gaze_avg, n=freq) # velocity axis
+        acceleration = computeAcceleration(time_velocity, velocity, n=1) # compute acceleration
+        sampen_velocity = sampen(velocity) #computed sample entropy of gaze velocity
+        sampen_acceleration = sampen(acceleration) #compute sample entropy of gaze acceleration
 
-        #compute sample entropy of gaze distance and angle (1e-25 to avoid NAN)
-        sampen_dist = sampen(dist_avg, freq) + 1e-25
-        sampen_angle = sampen(angle_avg, freq) + 1e-25
+        # compute sample entropy and angle (1e-25 to avoid NAN)
+
+        dist_avg = euclidianDistT(gaze_avg, skip=2) + 1e-25  # compute euclidian distance for consecutive gaze
+        angle_avg = anglesEstimation(gaze_avg, skip=2)  + 1e-25 # compute angle distance for consecutive gaze
+
+        # compute sample entropy of gaze distance
+        sampen_dist = sampen(dist_avg)
+        sampen_angle = sampen(angle_avg)
 
         # compute spatial entropy
         H, _, _ = np.histogram2d(gazex * 100, gazey * 100, bins=(xedges, yedges), density=True)
@@ -95,18 +112,17 @@ for path in zip(game_paths, gaze_paths, result_paths):
         p = p[p > 0]
         spatial_entropy = np.sum(p * np.log(1 / p)) / np.log(len(p))
 
-        #compute gaze-object-entropy
-        gaze_obj = removeNoObjectData(gaze_obj_data[['Time', 'GazeX', 'GazeY', 'ObjectX', 'ObjectY']].dropna().to_numpy())
+        # compute gaze-object-entropy
+        gaze_obj = removeNoObjectData(
+            gaze_obj_data[['Time', 'GazeX', 'GazeY', 'ObjectX', 'ObjectY']].dropna().to_numpy())
         gaze_point = gaze_obj[:, 1:3]
         obj_point = gaze_obj[:, 3:]
         gaze_obj_en = gazeEntropy(gaze_point - obj_point)
-        spectral_entropy2 = spectralEntropy(gaze_point - obj_point)
-
+        spectral_entropy = spectralEntropy(gaze_point - obj_point)
 
         #  start compute fixation time avg sample dist and sample angle
         fixation_times = []
         sampen_gaze_objs = []
-        spectral_entropys = []
         for _, g in game.iterrows():
             response_time = g["ResponseTime"]
             if (g["ResponseTime"] == -1) | (g["ResponseTime"] <= g["SpawnTime"]):
@@ -115,23 +131,17 @@ for path in zip(game_paths, gaze_paths, result_paths):
             gaze_t = gaze_obj_data[(gaze_obj_data["Time"] >= g["SpawnTime"]) & (gaze_obj_data["Time"] <= response_time)]
             idx_filter = filterFixation(gaze_t["Distance"].values <= AREA_FIX_TH)
 
-            #compute sample entropy
+            # compute sample entropy
             gaze_samp_avg = np.array([gaze_t["GazeX"].values, gaze_t["GazeY"].values]).transpose()
             obj_samp_avg = np.array([gaze_t["ObjectX"].values, gaze_t["ObjectY"].values]).transpose()
             gaze_to_obj = np.linalg.norm(gaze_samp_avg - obj_samp_avg, axis=-1)
 
-            #the embeding is 6 so it requires minimum lenth of 8
+            # the embeding is 6 so it requires minimum lenth of 8
             if len(gaze_to_obj) > 10:
-                sampen_gaze_obj = sampen(gaze_to_obj, freq) + 1e-25 #sample entropy of gaze-to-obj
-                spectral_entropy  = spectralEntropy(gaze_samp_avg - obj_samp_avg) #spectral entropy
+                sampen_gaze_obj = sampen(gaze_to_obj, freq)  # sample entropy of gaze-to-obj
                 if np.isinf(sampen_gaze_obj) == False:
                     sampen_gaze_objs.append(sampen_gaze_obj)
-                    spectral_entropys.append(spectral_entropy)
-
-
-
-
-            #end compute the avg sample entropy
+            # end compute the avg sample entropy
 
             for idx in idx_filter:
                 if len(idx) > 2:
@@ -141,18 +151,18 @@ for path in zip(game_paths, gaze_paths, result_paths):
                     fixation_times.append(fix_time)
         fixation_times = np.array(fixation_times) * 1000
         #  end compute fixation time
-        if len (sampen_gaze_objs) == 0 or len (spectral_entropys) == 0:
+        if (len(sampen_gaze_objs) == 0):
             print(f_name)
 
-        #add the data to DataFrame
+        # add the data to DataFrame
         if len(RT) > 2:
             data = data.append(
                 {"id": f_name, "Go": Go_response, "GoError": Go_E_reponse, "NoGo": NoGo_reponse,
                  "NoGoError": NoGo_E_reponse, "RT": RT_AVG, "RTVar": RT_Var_AVG, "Trajectory Area": area,
-                 "VelocityX_avg": np.average(velocity_x),
-                 "VelocityY_avg": np.average(velocity_y),
-                 "VelocityX_std": np.std(velocity_x),
-                 "VelocityY_std": np.std(velocity_y),
+                 "Velocity_avg": np.average(velocity),
+                 "Velocity_std": np.std(velocity),
+                 "Acceleration_avg": np.average(acceleration),
+                 "Acceleration_std": np.std(acceleration),
                  "Fixation_avg": np.average(fixation_times),
                  "Fixation_std": np.std(fixation_times),
                  "Sampen_dist": sampen_dist,
@@ -160,13 +170,14 @@ for path in zip(game_paths, gaze_paths, result_paths):
                  "Spatial_entropy": spatial_entropy,
                  "GazeObj_entropy": gaze_obj_en,
                  "Sampen_gaze_obj": np.average(sampen_gaze_objs),
-                 "Spectral_entropy" : np.average(spectral_entropys),
-                "Spectral_entropy2": spectral_entropy2,
+                 "Spectral_entropy": spectral_entropy,
+                 "Sampen_velocity": sampen_velocity,
+                 "Sampen_acceleration": sampen_acceleration,
                  }, ignore_index=True)
 
             i += 1
 
-    #save dataframe
+    # save dataframe
     result_summary_path = result_path + "summary\\"
     createDir(result_summary_path)
     data.to_csv(os.path.join(result_summary_path, "summary_response_new.csv"), columns=columns, index=False)

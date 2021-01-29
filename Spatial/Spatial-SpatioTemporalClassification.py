@@ -15,6 +15,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.inspection import permutation_importance
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from scipy.stats import kurtosis, skew
 sns.set_style("whitegrid")
 
@@ -44,13 +45,27 @@ for path in paths:
         ar_params.append(np.load(file, allow_pickle=True))
         response.append(np.load(response_file, allow_pickle=True))
         # s_features = spatial_features_concat.loc[spatial_features_concat['id'] == f_name][
-        #     ["Go", "GoError", "NoGo", "NoGoError", "RT", "RTVar", "Trajectory Area", "VelocityX_avg",
-        #        "VelocityY_avg", "VelocityX_std", "VelocityY_std", "Fixation_avg", "Fixation_std", "Sampen_dist",
-        #        "Sampen_angle", "Spatial_entropy", "GazeObj_entropy"]].values
+        #     ["Go", "GoError" , "NoGo",
+        #          "NoGoError", "RT", "RTVar", "Trajectory Area",
+        #          "Velocity_avg",
+        #          "Velocity_std",
+        #          "Acceleration_avg",
+        #          "Acceleration_std",
+        #          "Fixation_avg",
+        #          "Fixation_std",
+        #          "Sampen_dist",
+        #          "Sampen_angle",
+        #          "Spatial_entropy",
+        #          "GazeObj_entropy",
+        #          "Sampen_gaze_obj",
+        #          "Spectral_entropy",
+        #          "Sampen_velocity",
+        #          ]].values
 
         s_features = spatial_features_concat.loc[spatial_features_concat['id'] == f_name][
-            ["Go", "GoError", "Fixation_std", "Sampen_dist",
-               "Sampen_angle", "GazeObj_entropy"]].values
+            ["Go", "GoError", "Acceleration_std", "Sampen_dist",
+               "Sampen_angle", "GazeObj_entropy", "Fixation_std", "Spectral_entropy", "Sampen_velocity",
+                 ]].values
         spatial_features.append(s_features)
         subjects.append(np.ones(len(ar_params[s_idx])) * s_idx)
         s_idx += 1
@@ -91,12 +106,10 @@ X_norm = scaler.fit_transform(X, Y)
 X_spatial_norm = norm_scaller.fit_transform(X_spatial, Y)
 
 # combine features
-X_norm = np.concatenate([X_norm, X_spatial_norm], -1)
+X_norm = np.concatenate([X_norm], -1)
 #save features to csv
 # np.savetxt("features.csv", X_norm, delimiter=",")
 # np.savetxt("labels.csv", Y, delimiter=",")
-
-
 
 
 # compute Mutual Information
@@ -104,8 +117,9 @@ mi = mutual_info_classif(X_norm, Y)
 print(mi)
 
 #find the optimal value for the SVM
-parameters = {'C': [0.25, 0.5]}
-svc = SVC(random_state=0,  kernel="linear", class_weight="balanced")
+parameters = {'n_neighbors': [2, 3, 5, 7]}
+# svc = SVC(random_state=0,  kernel="rbf", class_weight="balanced")
+svc = KNeighborsClassifier()
 clf = GridSearchCV(svc, parameters)
 clf.fit(X_norm, Y)
 best_params = clf.best_params_
@@ -122,7 +136,8 @@ for train_index, test_index in kf.split(X_norm, Y):
     Y_test = Y[test_index]
 
 
-    best_model = SVC(C= best_params["C"],random_state=0, kernel="linear", class_weight="balanced")
+    # best_model = SVC(C= best_params["C"],random_state=0, kernel="rbf", class_weight="balanced")
+    best_model = KNeighborsClassifier(best_params["n_neighbors"])
     best_model.fit(X_train, Y_train) #fit the data into the model
     score = best_model.score(X_test, Y_test) #test the model with test data
     acc.append(score)

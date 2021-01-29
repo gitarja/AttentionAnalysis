@@ -48,4 +48,8 @@ plt.figure(6)
 sns.boxplot(y="GazeObj_entropy", x="Label",
                  data=all_results, palette="Set2").set_title('Gaze-to-obj Entropy')
 plt.savefig(PLOT_RESULT_PATH + "gazeobj_entropy.png")
+plt.figure(7)
+sns.boxplot(y="Spectral_entropy", x="Label",
+                 data=all_results, palette="Set2").set_title('Gaze-to-obj Spectral Entropy')
+plt.savefig(PLOT_RESULT_PATH + "spectral_entropy.png")
 plt.show()
