@@ -106,7 +106,7 @@ X_norm = scaler.fit_transform(X, Y)
 X_spatial_norm = norm_scaller.fit_transform(X_spatial, Y)
 
 # combine features
-X_norm = np.concatenate([X_norm], -1)
+X_norm = np.concatenate([X_norm, X_spatial_norm], -1)
 #save features to csv
 # np.savetxt("features.csv", X_norm, delimiter=",")
 # np.savetxt("labels.csv", Y, delimiter=",")
@@ -117,8 +117,7 @@ mi = mutual_info_classif(X_norm, Y)
 print(mi)
 
 #find the optimal value for the SVM
-parameters = {'n_neighbors': [2, 3, 5, 7]}
-# svc = SVC(random_state=0,  kernel="rbf", class_weight="balanced")
+parameters = {'n_neighbors': [5]}
 svc = KNeighborsClassifier()
 clf = GridSearchCV(svc, parameters)
 clf.fit(X_norm, Y)
@@ -135,8 +134,6 @@ for train_index, test_index in kf.split(X_norm, Y):
     Y_train = Y[train_index]
     Y_test = Y[test_index]
 
-
-    # best_model = SVC(C= best_params["C"],random_state=0, kernel="rbf", class_weight="balanced")
     best_model = KNeighborsClassifier(best_params["n_neighbors"])
     best_model.fit(X_train, Y_train) #fit the data into the model
     score = best_model.score(X_test, Y_test) #test the model with test data
