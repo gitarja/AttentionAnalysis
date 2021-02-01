@@ -7,27 +7,29 @@ We represent each subject using two-type of features: spatial and gaze-adjustmen
 
 Spatial features comprised of 19 index.
 
-| No | ID               | Detail                                                                             |
-|----|------------------|------------------------------------------------------------------------------------|
-| 1  | Go-positive      | The percentage of Go response                                                      |
-| 2  | Go-negative      | The percentage of Go-negative response                                             |
-| 3  | NoGo-positive    | The percentage of NoGo response                                                    |
-| 4  | NoGo-negative    | The percentage of NoGo-negative response                                           |
-| 5  | RT               | The average of a subject response time                                             |
-| 6  | RTVar            | The standard deviation of a subject response time                                  |
-| 7  | TrajectoryArea   | The gaze trajectory area                                                           |
-| 8  | VelocityX_avg    | The average velocity of a subject's gaze along the x-axis                          |
-| 9  | VelocityY_avg    | The average velocity  of a   subject's gaze along the y-axis                       |
-| 10 | VelocityX_std    | The standard deviation of the velocity    of a subject's gaze along the x-axis     |
-| 11 | VelocityY_std    | The standard deviation of the velocity    of a subject's gaze along the y-axis     |
-| 12 | Fixation_avg     | The average of a subject's fixation time                                           |
-| 13 | Fixation_std     | The standard deviation  of a   subject's fixation time                             |
-| 14 | Sampen_dist      | Sample entropy of a subject's gaze distance                                        |
-| 15 | Sampen_angle     | Sample entropy of a subject's gaze angle                                           |
-| 16 | Spatial_entropy  | The entropy of a subject's gaze                                                    |
-| 17 | GazeObj_entropy  | The entropy of the distance between a subject's gaze and stimulus   position       |
-| 18 | Sampen_gaze_obj  | Sample entropy  of the distance   between a subject's gaze and stimulus position   |
-| 19 | Spectral_entropy | Spectral entropy of  the distance   between a subject's gaze and stimulus position |
+| No | ID               | Detail                                                                           |   |   |   |   |
+|----|------------------|----------------------------------------------------------------------------------|---|---|---|---|
+| 1  | Go-positive      | The percentage of Go response                                                    |   |   |   |   |
+| 2  | Go-negative      | The percentage of Go-negative response                                           |   |   |   |   |
+| 3  | NoGo-positive    | The percentage of NoGo response                                                  |   |   |   |   |
+| 4  | NoGo-negative    | The percentage of NoGo-negative response                                         |   |   |   |   |
+| 5  | RT               | The average of a subject response time                                           |   |   |   |   |
+| 6  | RTVar            | The standard deviation of a subject response time                                |   |   |   |   |
+| 7  | TrajectoryArea   | The gaze trajectory area                                                         |   |   |   |   |
+| 8  | Velocity_avg     | The average velocity of subjects' gaze                                           |   |   |   |   |
+| 9  | Velocity_std     | The standard deviation of the velocity    of subjects' gaze                      |   |   |   |   |
+| 10 | Acceleration_avg | The average acceleration of subjects' gaze                                       |   |   |   |   |
+| 11 | Acceleration_std | The standard deviation of the velocity    of subjects' gaze along the y-axis     |   |   |   |   |
+| 12 | Fixation_avg     | The average of subjects' fixation time                                           |   |   |   |   |
+| 13 | Fixation_std     | The standard deviation  of   subjects' fixation time                             |   |   |   |   |
+| 14 | Sampen_dist      | Sample entropy of subjects' gaze distance                                        |   |   |   |   |
+| 15 | Sampen_angle     | Sample entropy of subjects' gaze angle                                           |   |   |   |   |
+| 16 | Spatial_entropy  | The entropy of subjects' gaze                                                    |   |   |   |   |
+| 17 | GazeObj_entropy  | The entropy of the distance between subjects' gaze and stimulus position         |   |   |   |   |
+| 18 | Sampen_gaze_obj  | Sample entropy  of the distance   between subjects' gaze and stimulus position   |   |   |   |   |
+| 19 | Spectral_entropy | Spectral entropy of  the distance   between subjects' gaze and stimulus position |   |   |   |   |
+| 20 | Sampen_velocity  | Sampe entropy of gaze velocity                                                   |   |   |   |   |
+
 
 
 ## Gaze-adjustment Features
