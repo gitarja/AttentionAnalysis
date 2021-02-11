@@ -6,6 +6,7 @@ from os import path, mkdir
 from scipy.stats import gaussian_kde as kde, entropy
 from scipy.signal import welch
 import warnings
+from scipy.signal._savitzky_golay import savgol_filter
 def createDir(dir):
     if not path.exists(dir):
         mkdir(dir)
@@ -65,7 +66,7 @@ def movingAverage(a, n=3, remove_neg=False):
     return avg_result
 
 
-def computeVelocity(time, gaze, n):
+def computeVelocity(time, gaze, n, time_constant=False):
     '''
     :param time: a series contains time
     :param gaze: a series contains gaze values
@@ -78,14 +79,16 @@ def computeVelocity(time, gaze, n):
         dt = (time[i] - time[i - n])
         gt = np.linalg.norm(gaze[i] - gaze[i - n])
 
-        if (dt <= 0.1):
-            velc.append(np.abs(gt) / dt)
-            times.append(time[i])
+        # if (dt <= 0.5):
+        if time_constant == False:
+            velc.append(gt / dt)
+        else:
+            velc.append(gt)
+        times.append(time[i])
     # print(np.max([np.abs((gaze[i] - gaze[i - n])) for i in range(n, len(time), n)]))
     return velc, times
 
-
-def computeAcceleration(time, velocity, n):
+def computeAcceleration(time, velocity, n, time_constant=False):
     '''
     :param dt: time difference
     :param velocity: a series of velocity
@@ -96,10 +99,36 @@ def computeAcceleration(time, velocity, n):
     for i in range(n, len(velocity), n):
         dt = (time[i] - time[i - n])
         vt = (velocity[i] - velocity[i - n])
-        if (dt <= 0.1):
+        # if (dt <= 0.2):
+        if time_constant == False:
             accs.append((vt/dt) + 1e-25) #add 1-e25 to prevent zero
+        else:
+            accs.append(vt)  # add 1-e25 to prevent zero
 
     return accs
+
+def computeVelocityAccel(time, gaze, n, poly):
+    # x_filtered
+    # first derivative
+    gaze_x_d1 = savgol_filter(gaze[:, 0], n, polyorder=poly, deriv=1)
+    gaze_y_d1 = savgol_filter(gaze[:, 1], n, polyorder=poly, deriv=1)
+    time_d1 =  savgol_filter(time, n, polyorder=poly, deriv=1)
+
+    gaze_d1 =np.array([gaze_x_d1, gaze_y_d1]).transpose()
+
+    #second derivative
+    gaze_x_d2 = savgol_filter(gaze[:, 0], n, polyorder=poly, deriv=2)
+    gaze_y_d2 = savgol_filter(gaze[:, 1], n, polyorder=poly, deriv=2)
+    time_d2 =  savgol_filter(savgol_filter(time, n, polyorder=poly, deriv=0), n, polyorder=poly, deriv=1)
+
+    gaze_d2 = np.array([gaze_x_d2, gaze_y_d2]).transpose()
+
+    velocity_filtered = np.sqrt(np.sum(np.power(gaze_d1, 2), -1)) / time_d1
+
+    acceleration_filtered = np.sqrt(np.sum(np.power(gaze_d2, 2), -1)) / time_d2
+
+
+    return velocity_filtered, acceleration_filtered
 
 
 
@@ -150,8 +179,8 @@ def arModel(min_len=20, maxlag=4):
     :param maxlag: maximum leg
     :return: AR model
     '''
-    start = 1.1
-    end = 1.05
+    start = 1.0
+    end = 0.995
     prior = np.arange(start, end, (end - start) / min_len)
     model = AR(prior)
     model.fit(maxlag=maxlag)

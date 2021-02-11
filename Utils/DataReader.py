@@ -42,7 +42,7 @@ class DataReader:
                 gaze = pd.read_csv(file)
                 gaze = gaze[(gaze["Time"].values > 0.1)]
                 gaze_t = gaze[(gaze["ObjectX"].values != -1)& (gaze["ObjectY"].values != -1)].copy()
-                gaze_t.loc[:, "Distance"] = euclidianDist(gaze_t[["GazeX", "GazeY"]].values, (gaze_t[["ObjectX", "ObjectY"]].values))
+                gaze_t.loc[:, "Distance"] = euclidianDist(gaze_t[["GazeX", "GazeY"]].values, gaze_t[["ObjectX", "ObjectY"]].values)
                 file_name = file.split(data_path)[-1]
                 file_names.append(file_name.split(file_prefix)[0])
                 #add gaze and gaze-object to list

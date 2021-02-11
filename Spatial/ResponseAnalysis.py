@@ -86,24 +86,24 @@ for path in zip(game_paths, gaze_paths, result_paths):
         RT_series.to_csv(result_path + f_name + "_RTSeries.csv")
 
         # compute gaze velocity
-        freq = int(FREQ_GAZE / 20)
+        skip = 1
         time = gaze_data["Time"].values
         gazex = gaze_data["GazeX"].values
         gazey = gaze_data["GazeY"].values
         gaze_avg = np.array([gazex, gazey]).transpose()
-        velocity, time_velocity = computeVelocity(time, gaze_avg, n=freq) # velocity axis
-        acceleration = computeAcceleration(time_velocity, velocity, n=1) # compute acceleration
-        sampen_velocity = sampen(velocity) #computed sample entropy of gaze velocity
-        sampen_acceleration = sampen(acceleration) #compute sample entropy of gaze acceleration
+        velocity = gaze_data["Velocity"].values
+        acceleration =  gaze_data["Acceleration"].values
+        sampen_velocity = sampen(velocity, 2) #computed sample entropy of gaze velocity
+        sampen_acceleration = sampen(acceleration, 2) #compute sample entropy of gaze acceleration
 
         # compute sample entropy and angle (1e-25 to avoid NAN)
 
-        dist_avg = euclidianDistT(gaze_avg, skip=2) + 1e-25  # compute euclidian distance for consecutive gaze
-        angle_avg = anglesEstimation(gaze_avg, skip=2)  + 1e-25 # compute angle distance for consecutive gaze
+        dist_avg = euclidianDistT(gaze_avg, skip=2)  # compute euclidian distance for consecutive gaze
+        angle_avg = anglesEstimation(gaze_avg, skip=2)  # compute angle distance for consecutive gaze
 
         # compute sample entropy of gaze distance
-        sampen_dist = sampen(dist_avg)
-        sampen_angle = sampen(angle_avg)
+        sampen_dist = sampen(dist_avg, 2)
+        sampen_angle = sampen(angle_avg, 2)
 
         # compute spatial entropy
         H, _, _ = np.histogram2d(gazex * 100, gazey * 100, bins=(xedges, yedges), density=True)
@@ -138,7 +138,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
             # the embeding is 6 so it requires minimum lenth of 8
             if len(gaze_to_obj) > 10:
-                sampen_gaze_obj = sampen(gaze_to_obj, freq)  # sample entropy of gaze-to-obj
+                sampen_gaze_obj = sampen(gaze_to_obj, 2)  # sample entropy of gaze-to-obj
                 if np.isinf(sampen_gaze_obj) == False:
                     sampen_gaze_objs.append(sampen_gaze_obj)
             # end compute the avg sample entropy

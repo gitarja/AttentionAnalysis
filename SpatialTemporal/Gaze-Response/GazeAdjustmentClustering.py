@@ -26,11 +26,9 @@ response_labels = ["GoPositive", "NoGoNegative", "GoNegative", "NoGoPositive"]
 colors = []
 
 # mean and std of features
-X_mean = np.array([ 0.00614283,  0.8159654 ,  0.61965095, -0.29654615, -0.25634407,
-        0.07089135])
+X_mean = np.array([0.00320525,  1.54726863, -0.57605462])
 
-X_std = np.array([0.18147366, 0.60033625, 0.57644222, 0.6631802 , 0.7000391 ,
-       0.79502488])
+X_std = np.array([0.03706254, 0.31319425, 0.30703959])
 
 # X_mean = np.array([ 0.04364135,  0.81553428,  0.42240785, -0.36420452, -0.04945678])
 #
@@ -39,7 +37,6 @@ X_std = np.array([0.18147366, 0.60033625, 0.57644222, 0.6631802 , 0.7000391 ,
 #iterations
 
 p_idx = 0
-
 
 
 for path in paths:
@@ -61,7 +58,8 @@ for path in paths:
         s_idx += 1
 
     X = np.concatenate(ar_params_list, 0)
-
+# print(np.mean(X, 0))
+# print(np.std(X, 0))
     response = np.concatenate(response_list, axis=0)[np.sum(X, axis=-1) != 0]
     subjects = np.concatenate(subjects_list, axis=0)[np.sum(X, axis=-1) != 0]
     X_filter = X[np.sum(X, axis=-1) != 0]
@@ -143,7 +141,7 @@ for path in paths:
                 plt.ylabel("Distance")
                 plt.plot(np.arange(0, len(a_c), 1)/ FREQ_GAZE, a_c, label="Centroid" + str(c))
                 plt.title(response_labels[r])
-                # plt.ylim([0, 1])
+                plt.ylim([0, 1])
 
         plt.figure(r + 2)
         plt.legend()
