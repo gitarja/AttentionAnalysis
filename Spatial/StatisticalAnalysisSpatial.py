@@ -12,9 +12,22 @@ between_template = ("Between Groups F-val: {}, p-val: {}")
 within_template = ("Typical Groups F-val: {}, p-val: {} | ASD Groups F-val: {}, p-val: {}")
 mix_template = ("{}, {}, {}, {}, {}, {}")
 
-columns = ["Go", "GoError", "NoGo", "NoGoError", "RT", "RTVar", "Trajectory Area", "VelocityX_avg",
-               "VelocityY_avg", "VelocityX_std", "VelocityY_std", "Fixation_avg", "Fixation_std", "Sampen_dist",
-               "Sampen_angle", "Spatial_entropy", "GazeObj_entropy",   "Sampen_gaze_obj", "Spectral_entropy"]
+columns = ["Go", "GoError" , "NoGo",
+                 "NoGoError", "RT", "RTVar", "Trajectory Area",
+                 "Velocity_avg",
+                 "Velocity_std",
+                 "Acceleration_avg",
+                 "Acceleration_std",
+                 "Fixation_avg",
+                 "Fixation_std",
+                 "Sampen_dist",
+                 "Sampen_angle",
+                 "Spatial_entropy",
+                 "GazeObj_entropy",
+                 "Sampen_gaze_obj",
+                 "Spectral_entropy",
+                 "Sampen_velocity",
+                 "Sampen_acceleration"]
 print("-------------------Typical-Average--------------------------")
 print(typical_result.mean(axis=0))
 print(typical_result.std(axis=0))
@@ -23,11 +36,11 @@ print(asd_results.mean(axis=0))
 print(asd_results.std(axis=0))
 for col in columns:
     # between Typical and ASD
-    F, p = stats.ttest_ind(typical_result[col].values, asd_results[col].values)
+    F, p = stats.mannwhitneyu(typical_result[col].values, asd_results[col].values)
     # within group
-    F_typical, p_typical = stats.ttest_ind(typical_result.iloc[0:typical_len][col].values,
+    F_typical, p_typical = stats.mannwhitneyu(typical_result.iloc[0:typical_len][col].values,
                                                  typical_result.iloc[typical_len:][col].values)
-    F_asd, p_asd = stats.ttest_ind(asd_results.iloc[0:asd_len][col].values,
+    F_asd, p_asd = stats.mannwhitneyu(asd_results.iloc[0:asd_len][col].values,
                                          asd_results.iloc[asd_len:][col].values)
     # print("-------------------"+col+"--------------------------")
     print(mix_template.format(F, p, F_typical, p_typical, F_asd, p_asd))

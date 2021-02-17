@@ -1,7 +1,7 @@
 import pandas as pd
 import glob
 import numpy as np
-from Utils.DataReader import DataReader
+from Utils.DataReader import DataReader, euclidianDist
 from Utils.Lib import arParams, createDir, computeCutoff
 from Utils.OutliersRemoval import OutliersRemoval
 from Conf.Settings import ASD_PATH, ASD_DW_PATH, ASD_DW_RESULTS_PATH, MIN_D_N, MAX_LAG, CUT_OFF, TYPICAL_PATH, TYPICAL_DW_PATH, TYPICAL_DW_RESULTS_PATH, MIN_D_N
@@ -64,8 +64,11 @@ for path in zip(game_paths, gaze_paths, result_paths):
                 # stimulus for 700 ms
 
                 response_time = data["SpawnTime"] + 0.7
-            gaze_t = gaze[(gaze["Time"] >= data["SpawnTime"]) & (gaze["Time"] <= response_time)]
-            distances = gaze_t["Distance"].values #distance between gaze and object
+            gaze_t = gaze[
+                (gaze["Time"] >= data["SpawnTime"]) & (gaze["Time"] <= response_time) & (gaze["ObjectX"] != -1) & (
+                            gaze["ObjectY"] != -1)]
+            # distances = gaze_t["Distance"].values #distance between gaze and object
+            distances = euclidianDist(gaze_t[["GazeX", "GazeY"]].values, gaze_t[["ObjectX", "ObjectY"]].values) #distance between gaze and object
             times = gaze_t["Time"].values
             # only proceed the distance longer than threshold
             # shorter distance may cause error
@@ -95,7 +98,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
                 except:
                     #when fail set to zeros and will not be proceed further
                     mean_coeff = 0
-                    ar_params.append([0, 0, 0, 0, 0, 0])
+                    ar_params.append([0, 0, 0])
                     samp_e_list.append(0)
 
         # save results

@@ -48,4 +48,20 @@ plt.figure(6)
 sns.boxplot(y="GazeObj_entropy", x="Label",
                  data=all_results, palette="Set2").set_title('Gaze-to-obj Entropy')
 plt.savefig(PLOT_RESULT_PATH + "gazeobj_entropy.png")
+plt.figure(7)
+sns.boxplot(y="Spectral_entropy", x="Label",
+                 data=all_results, palette="Set2").set_title('Gaze-to-obj Spectral Entropy')
+plt.savefig(PLOT_RESULT_PATH + "spectral_entropy.png")
+plt.figure(8)
+sns.boxplot(y="Acceleration_avg", x="Label",
+                 data=all_results, palette="Set2").set_title('Average Acceleration')
+plt.savefig(PLOT_RESULT_PATH + "acceleration_avg.png")
+plt.figure(9)
+sns.boxplot(y="Fixation_std", x="Label",
+                 data=all_results, palette="Set2").set_title('Variance Fixation Time')
+plt.savefig(PLOT_RESULT_PATH + "fixation_std.png")
+plt.figure(10)
+sns.boxplot(y="Sampen_velocity", x="Label",
+                 data=all_results, palette="Set2").set_title('Sample Entropy of Velocity')
+plt.savefig(PLOT_RESULT_PATH + "sampen_velocity.png")
 plt.show()
