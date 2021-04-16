@@ -41,14 +41,14 @@ def plotVelocityAcc(time, x_ori, title):
 
     # x_filtered
     # first derivative
-    gaze_x_d1 = savgol_filter(x_ori[:, 0], AVG_WIN_SIZE, polyorder=2, deriv=1)
-    gaze_y_d1 = savgol_filter(x_ori[:, 1], AVG_WIN_SIZE, polyorder=2, deriv=1)
+    gaze_x_d1 = savgol_filter(x_ori[:, 0], AVG_WIN_SIZE, polyorder=3, deriv=1)
+    gaze_y_d1 = savgol_filter(x_ori[:, 1], AVG_WIN_SIZE, polyorder=3, deriv=1)
 
     gaze_d1 =np.array([gaze_x_d1, gaze_y_d1]).transpose()
 
     #second derivative
-    gaze_x_d2 = savgol_filter(x_ori[:, 0], AVG_WIN_SIZE, polyorder=2, deriv=2)
-    gaze_y_d2 = savgol_filter(x_ori[:, 1], AVG_WIN_SIZE, polyorder=2, deriv=2)
+    gaze_x_d2 = savgol_filter(x_ori[:, 0], AVG_WIN_SIZE, polyorder=3, deriv=2)
+    gaze_y_d2 = savgol_filter(x_ori[:, 1], AVG_WIN_SIZE, polyorder=3, deriv=2)
 
     gaze_d2 = np.array([gaze_x_d2, gaze_y_d2]).transpose()
 
@@ -117,7 +117,7 @@ for path in paths:
             if col in normalize_col:
                 down_avg_data[col] = down_sample[col].values
             else:
-                down_avg_data[col] = savgol_filter(down_sample[col].values, AVG_WIN_SIZE, polyorder=2)
+                down_avg_data[col] = savgol_filter(down_sample[col].values, AVG_WIN_SIZE, polyorder=3)
 
 
         # powerPlot(down_sample["GazeX"].values[1000:1200], down_avg_data["GazeX"].values[1000:1200], 72, "n=3, poly=2") #power plot
@@ -133,7 +133,7 @@ for path in paths:
 
         #compute velocity and acceleration using Savgol
         gaze_avg = np.array([down_sample["GazeX"].values, down_sample["GazeY"].values]).transpose()
-        velocity, acceleration = computeVelocityAccel(down_sample["Time"].values, gaze_avg, AVG_WIN_SIZE, 2)
+        velocity, acceleration = computeVelocityAccel(down_sample["Time"].values, gaze_avg, AVG_WIN_SIZE, 3)
         down_avg_data["Velocity"] = velocity
         down_avg_data["Acceleration"] = acceleration
 

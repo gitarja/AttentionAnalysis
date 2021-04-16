@@ -12,6 +12,8 @@ from statsmodels.tsa.ar_model import AR
 
 max_lag = np.zeros(20)
 max_llf = np.zeros(20)
+aic_lag = np.zeros(20)
+bic_lag = np.zeros(20)
 
 # read game data
 reader = DataReader()
@@ -52,6 +54,8 @@ for d in zip(data_game, data_gaze):
                 model_fitted = model.fit(ic="bic", maxiter=100)
                 max_lag[model_fitted.k_ar] = max_lag[model_fitted.k_ar] + 1
                 max_llf[model_fitted.k_ar] += model_fitted.llf
+                aic_lag[model_fitted.k_ar] += model_fitted.aic
+                bic_lag[model_fitted.k_ar] += model_fitted.bic
             except:
                 print(distances)
 
@@ -64,4 +68,6 @@ print(max_llf[optimal_lag] / np.max(max_lag))
 
 print(max_lag)
 print(max_llf / np.max(max_lag))
+print(aic_lag / np.max(max_lag))
+print(bic_lag / np.max(max_lag))
 

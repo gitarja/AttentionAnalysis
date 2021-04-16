@@ -7,6 +7,7 @@ from scipy.stats import gaussian_kde as kde, entropy
 from scipy.signal import welch
 import warnings
 from scipy.signal._savitzky_golay import savgol_filter
+from statsmodels.tsa.stattools import acf
 def createDir(dir):
     if not path.exists(dir):
         mkdir(dir)
@@ -112,20 +113,20 @@ def computeVelocityAccel(time, gaze, n, poly):
     # first derivative
     gaze_x_d1 = savgol_filter(gaze[:, 0], n, polyorder=poly, deriv=1)
     gaze_y_d1 = savgol_filter(gaze[:, 1], n, polyorder=poly, deriv=1)
-    time_d1 =  savgol_filter(time, n, polyorder=poly, deriv=1)
+    # time_d1 =  savgol_filter(time, n, polyorder=poly, deriv=1)
 
     gaze_d1 =np.array([gaze_x_d1, gaze_y_d1]).transpose()
 
     #second derivative
     gaze_x_d2 = savgol_filter(gaze[:, 0], n, polyorder=poly, deriv=2)
     gaze_y_d2 = savgol_filter(gaze[:, 1], n, polyorder=poly, deriv=2)
-    time_d2 =  savgol_filter(savgol_filter(time, n, polyorder=poly, deriv=0), n, polyorder=poly, deriv=1)
+    # time_d2 =  savgol_filter(savgol_filter(time, n, polyorder=poly, deriv=0), n, polyorder=poly, deriv=1)
 
     gaze_d2 = np.array([gaze_x_d2, gaze_y_d2]).transpose()
 
-    velocity_filtered = np.sqrt(np.sum(np.power(gaze_d1, 2), -1)) / time_d1
+    velocity_filtered = np.sqrt(np.sum(np.power(gaze_d1, 2), -1))
 
-    acceleration_filtered = np.sqrt(np.sum(np.power(gaze_d2, 2), -1)) / time_d2
+    acceleration_filtered = np.sqrt(np.sum(np.power(gaze_d2, 2), -1))
 
 
     return velocity_filtered, acceleration_filtered
@@ -180,7 +181,7 @@ def arModel(min_len=20, maxlag=4):
     :return: AR model
     '''
     start = 1.0
-    end = 0.995
+    end = 0.95
     prior = np.arange(start, end, (end - start) / min_len)
     model = AR(prior)
     model.fit(maxlag=maxlag)
@@ -237,7 +238,21 @@ def spectralEntropy(xy, fs=72):     # defaults to downsampled frequency
     :param fs:
     :return:
     '''
-    _, spx = welch(xy[:,0], fs, nperseg=32)     # scipy.signal.welch
-    _, spy = welch(xy[:,1], fs, nperseg=32)     # equal spectrum discretization for x, y
-    return entropy(spx + spy)/np.log(len(_))  # scipy.stats.entropy
+    _, spx = welch(xy[:,0], fs, nperseg=fs/2)     # scipy.signal.welch
+    _, spy = welch(xy[:,1], fs, nperseg=fs/2)     # equal spectrum discretization for x, y
+    return entropy(spx + spy)/np.log2(len(_))  # scipy.stats.entropy
+
+
+def cohenD(a, b):
+    n_a = len(a)
+    n_b = len(b)
+    return (np.mean(a)-np.mean(b))/\
+           np.sqrt(((n_a-1)*np.var(a, ddof=1) + (n_b-1)*np.var(b, ddof=1)) / (n_a + n_b -2))
+
+def autocorr(x, max_lag=20, normalize=True):
+    if normalize:
+        return acf(x, nlags=max_lag, fft=False)
+    else:
+        result = np.correlate(x, x, mode='full')
+        return result[result.size // 2:]
 

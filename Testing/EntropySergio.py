@@ -127,7 +127,7 @@ def plotResults(distH, distA, titleString, digits=5):
 # if it includes the term 'by segments', then the mean over obj-appearance segments is used;
 # these descriptors can be combined, as in 'gaze-to-object velocity by segments'
 
-measureType = 'acceleration by segments'
+measureType = 'spectral entropy'
 ParentDirectory = './PrasSavgolDataFeb2021/'
 Hdiag, Sdiag = testMeasure(TYPICAL_DW_PATH, measureType)
 Htyp, Styp = testMeasure(ASD_DW_PATH, measureType)

@@ -15,7 +15,7 @@ PLOT_RESULT_PATH = "D:\\usr\\pras\\result\\AttentionTest-Analysis\\SpatioTempora
 #Analysis path
 ANALYSIS_RESULT_PATH = "D:\\usr\\pras\\result\\AttentionTest-Analysis\\SpatioTemporal\\"
 P_VALUE_FILE = "D:\\usr\\pras\\data\\googledrive\\Research-Doctoral\\Experiment-Result\\SpatioTemporal-2020-08-27\\p-values.csv"
-
+P_VALUE_COEFF_FILE = "D:\\usr\\pras\\data\\googledrive\\Research-Doctoral\\Experiment-Result\\SpatioTemporal-2020-08-27\\p-values-coefficients.csv"
 
 #Constant
 MIN_D_N = 9

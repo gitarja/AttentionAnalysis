@@ -44,22 +44,26 @@ for path in zip(game_paths, gaze_paths, result_paths):
 
     # dataframe for the results
 
-    columns = ["id", "Go", "GoError" , "NoGo",
-                 "NoGoError", "RT", "RTVar", "Trajectory Area",
-                 "Velocity_avg",
-                 "Velocity_std",
-                 "Acceleration_avg",
-                 "Acceleration_std",
-                 "Fixation_avg",
-                 "Fixation_std",
-                 "Sampen_dist",
-                 "Sampen_angle",
-                 "Spatial_entropy",
-                 "GazeObj_entropy",
-                 "Sampen_gaze_obj",
-                 "Spectral_entropy",
-                 "Sampen_velocity",
-                 "Sampen_acceleration"]
+    columns = ["id", "Go", "GoError", "NoGo",
+               "NoGoError", "RT", "RTVar", "Trajectory Area",
+               "Velocity_avg",
+               "Velocity_std",
+               "Acceleration_avg",
+               "Acceleration_std",
+               "Fixation_avg",
+               "Fixation_std",
+               "Distance_avg",
+               "Distance_std",
+               "Angle_avg",
+               "Angle_std",
+               "Sampen_dist",
+               "Sampen_angle",
+               "Spatial_entropy",
+               "GazeObj_entropy",
+               "Sampen_gaze_obj",
+               "Spectral_entropy",
+               "Sampen_velocity",
+               "Sampen_acceleration"]
 
     data = pd.DataFrame(columns=columns)
     i = 0
@@ -92,9 +96,9 @@ for path in zip(game_paths, gaze_paths, result_paths):
         gazey = gaze_data["GazeY"].values
         gaze_avg = np.array([gazex, gazey]).transpose()
         velocity = gaze_data["Velocity"].values
-        acceleration =  gaze_data["Acceleration"].values
-        sampen_velocity = sampen(velocity, 2) #computed sample entropy of gaze velocity
-        sampen_acceleration = sampen(acceleration, 2) #compute sample entropy of gaze acceleration
+        acceleration = gaze_data["Acceleration"].values
+        sampen_velocity = sampen(velocity, 2)  # computed sample entropy of gaze velocity
+        sampen_acceleration = sampen(acceleration, 2)  # compute sample entropy of gaze acceleration
 
         # compute sample entropy and angle (1e-25 to avoid NAN)
 
@@ -165,6 +169,10 @@ for path in zip(game_paths, gaze_paths, result_paths):
                  "Acceleration_std": np.std(acceleration),
                  "Fixation_avg": np.average(fixation_times),
                  "Fixation_std": np.std(fixation_times),
+                "Distance_avg": np.average(dist_avg),
+               "Distance_std": np.std(dist_avg),
+               "Angle_avg": np.average(angle_avg),
+               "Angle_std": np.std(angle_avg),
                  "Sampen_dist": sampen_dist,
                  "Sampen_angle": sampen_angle,
                  "Spatial_entropy": spatial_entropy,

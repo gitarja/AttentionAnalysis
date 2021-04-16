@@ -77,7 +77,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
                 #response type
                 # 0: GoPos
                 # 1: NoGoNeg
-                # 2: NoNeg
+                # 2: GoNeg
                 # 3: NoGoPos
                 res = np.argmax(data[["PosResponse", "NegResponse", "MissResponse"]].values)
                 if (res == 0) & (data["ResponseTime"] == -1):
