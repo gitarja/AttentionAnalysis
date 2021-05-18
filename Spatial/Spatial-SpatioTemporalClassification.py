@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import BaggingClassifier, AdaBoostClassifier
 from Conf.Settings import MAX_LAG, MIN_D_N, TYPICAL_DW_RESULTS_PATH, ASD_DW_RESULTS_PATH, ANALYSIS_RESULT_PATH
 from sklearn.feature_selection import mutual_info_classif
-from sklearn.metrics import classification_report, confusion_matrix, matthews_corrcoef
+from sklearn.metrics import classification_report, confusion_matrix, matthews_corrcoef, roc_curve, auc
 import pandas as pd
 from sklearn.neighbors import NeighborhoodComponentsAnalysis
 from sklearn.decomposition import PCA
@@ -19,6 +19,7 @@ from sklearn.tree import export_graphviz
 import pydotplus
 from dtreeviz.trees import dtreeviz
 from io import StringIO
+import matplotlib.pyplot as plt
 
 sns.set_style("whitegrid")
 
@@ -80,19 +81,6 @@ spatial_features_concat = pd.concat([typical_spatial_features, asd_spatial_featu
 #                  ]
 
 
-# features_cols = [
-#     "Sampen_velocity",
-#     "Acceleration_avg",
-#     "Fixation_std",
-#     "Sampen_dist",
-#     "Sampen_angle",
-#     "GazeObj_entropy",
-#     "Sampen_gaze_obj",
-#     "Spectral_entropy",
-#
-# ]
-
-
 features_cols = [
     "Sampen_velocity",
     "Acceleration_avg",
@@ -102,14 +90,26 @@ features_cols = [
     "GazeObj_entropy",
     "Sampen_gaze_obj",
     "Spectral_entropy",
-    "Go",
-    "GoError",
-    "NoGo",
-    "NoGoError",
-    "RT",
-    "RTVar",
 
 ]
+
+
+# features_cols = [
+#     "Sampen_velocity",
+#     "Acceleration_avg",
+#     "Fixation_std",
+#     "Sampen_dist",
+#     "Sampen_angle",
+#     "GazeObj_entropy",
+#     "Sampen_gaze_obj",
+#     "Spectral_entropy",
+#     "Go",
+#     "GoError",
+#     "NoGo",
+#     "NoGoError",
+#     "RT",
+#     "RTVar",
+# ]
 
 for path in paths:
     files = glob.glob(path + "*_ar_params.npy")
@@ -167,15 +167,19 @@ X_norm = scaler.fit_transform(X, Y)
 X_spatial_norm = norm_scaller.fit_transform(X_spatial, Y)
 
 # combine features
-X_norm = np.concatenate([X_norm, X_spatial_norm], -1)
+X_norm = np.concatenate([X_spatial_norm], -1)
 # save features to csv
 np.savetxt("features.csv", X_norm, delimiter=",")
 np.savetxt("labels.csv", Y, delimiter=",")
 
 
-# find the optimal value for the SVM
-parameters = {'n_estimators': [15, 25, 50, 75], "learning_rate": [0.5, 0.75, 1.]}
-base_model = AdaBoostClassifier(base_estimator=DecisionTreeClassifier(max_depth=10, max_features=0.5, max_leaf_nodes=7),
+# find the optimal value for the Adaboost and Decision Tree
+parameters = {'n_estimators': [15, 25, 50, 75], "learning_rate": [0.5, 0.75], "base_estimator__max_depth":[1, 3, 5, 7], "base_estimator__max_features":[.5], "base_estimator__max_leaf_nodes":[3, 5, 7]}
+# base estimator for AdaBoost
+base_estimator = DecisionTreeClassifier(criterion="entropy",
+                                        class_weight="balanced",
+                                        random_state=0)
+base_model = AdaBoostClassifier(base_estimator=base_estimator,
                                 random_state=0)
 clf = GridSearchCV(base_model, parameters)
 clf.fit(X_norm, Y)
@@ -183,16 +187,15 @@ best_params = clf.best_params_
 
 # print(clf.best_estimator_.feature_importances_)
 
-# base estimator for AdaBoost
-base_estimator = DecisionTreeClassifier(criterion="entropy", max_depth=10, max_features=0.5, max_leaf_nodes=7,
-                                        class_weight="balanced",
-                                        random_state=0)
+
 
 acc = []
-
+roc_auc_values = []
+mcc = []
 # perform k-fold cross validation
 kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=0)
 fold = 0
+
 for train_index, test_index in kf.split(X_norm, Y):
     X_train = X_norm[train_index]
     X_test = X_norm[test_index]
@@ -200,22 +203,45 @@ for train_index, test_index in kf.split(X_norm, Y):
     Y_train = Y[train_index]
     Y_test = Y[test_index]
 
-    best_model = AdaBoostClassifier(learning_rate=.5,
-                                    base_estimator=base_estimator,
-                                    n_estimators=15, random_state=0)
+    best_model = AdaBoostClassifier(learning_rate=best_params["learning_rate"],
+                                    base_estimator=DecisionTreeClassifier(criterion="entropy", max_depth=best_params["base_estimator__max_depth"], max_features=best_params["base_estimator__max_features"], max_leaf_nodes=best_params["base_estimator__max_leaf_nodes"],
+                                        class_weight="balanced",
+                                        random_state=0),
+                                    n_estimators=best_params["n_estimators"], random_state=0)
 
-    best_model.fit(X_train, Y_train)  # fit the data into the model
-    score = best_model.score(X_test, Y_test)  # test the model with test data
-    acc.append(score)
-    print(score)
-    # print(best_model.predict_proba(X_test)) #print the probability of the data
-    # print(matthews_corrcoef(Y_test, best_model.predict(X_test)))  # matthews ccc
-    print(classification_report(Y_test, best_model.predict(X_test)))  # compute precision recall and F1-score
-    print(confusion_matrix(Y_test, best_model.predict(X_test)))  # compute confusion matrix
+    print(f[test_index])
+    # best_model.fit(X_train, Y_train)  # fit the data into the model
+    # score = best_model.score(X_test, Y_test)  # test the model with test data
+    # acc.append(score)
+    #
+    # fpr, tpr, _ = roc_curve(Y_test, best_model.predict_proba(X_test)[:, 1])
+    # roc_auc = auc(fpr, tpr)
+    # roc_auc_values.append(roc_auc)
+    #
+    # mcc.append(matthews_corrcoef(Y_test, best_model.predict(X_test)))
+    # # print(score)
+    # # print(matthews_corrcoef(Y_test, best_model.predict(X_test)))  # matthews ccc
+    # # print(roc_auc) #auc
+    # print(classification_report(Y_test, best_model.predict(X_test)))  # compute precision recall and F1-score
+    # print(confusion_matrix(Y_test, best_model.predict(X_test)))  # compute confusion matrix
+
+
+    # plt.figure()
+    # lw = 2
+    # plt.plot(fpr, tpr, color='darkorange',
+    #          lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+    # plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    # plt.xlim([0.0, 1.0])
+    # plt.ylim([0.0, 1.05])
+    # plt.xlabel('False Positive Rate')
+    # plt.ylabel('True Positive Rate')
+    # plt.legend(loc="lower right")
+    # plt.show()
     # print(f[test_index][Y_test !=best_model.predict(X_test)])
 
-print("AVG-Classification %f" % (np.mean(acc)))  # average ACC
-
+# for i in range(len(acc)):
+#     print("%f, %f, %f" %  (acc[i], mcc[i], roc_auc_values[i]))  # average ACC
+# print(np.average(acc))
 # visualize tree
 # best_model = DecisionTreeClassifier(criterion="entropy", max_depth=7, max_leaf_nodes=5, random_state=0, class_weight="balanced")
 # best_model.fit(X_norm, Y)
