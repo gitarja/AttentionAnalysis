@@ -39,27 +39,27 @@ typical_spatial_features = pd.read_csv(TYPICAL_DW_RESULTS_PATH + "summary\\summa
 asd_spatial_features = pd.read_csv(ASD_DW_RESULTS_PATH + "summary\\summary_response_new.csv")
 spatial_features_concat = pd.concat([typical_spatial_features, asd_spatial_features], sort=True)
 
-features_cols = ["Go", "GoError", "NoGo",
-           "NoGoError", "RT", "RTVar", "Trajectory Area",
-           "Velocity_avg",
-           "Velocity_std",
-           "Acceleration_avg",
-           "Acceleration_std",
-           "Fixation_avg",
-           "Fixation_std",
-           "Distance_avg",
-           "Distance_std",
-           "Angle_avg",
-           "Angle_std",
-           "Sampen_dist",
-           "Sampen_angle",
-           "Spatial_entropy",
-           "GazeObj_entropy",
-           "Sampen_gaze_obj",
-           "Spectral_entropy",
-           "Sampen_velocity",
-           "Sampen_acceleration"
-                 ]
+# features_cols = ["Go", "GoError", "NoGo",
+#            "NoGoError", "RT", "RTVar", "Trajectory Area",
+#            "Velocity_avg",
+#            "Velocity_std",
+#            "Acceleration_avg",
+#            "Acceleration_std",
+#            "Fixation_avg",
+#            "Fixation_std",
+#            "Distance_avg",
+#            "Distance_std",
+#            "Angle_avg",
+#            "Angle_std",
+#            "Sampen_dist",
+#            "Sampen_angle",
+#            "Spatial_entropy",
+#            "GazeObj_entropy",
+#            "Sampen_gaze_obj",
+#            "Spectral_entropy",
+#            "Sampen_velocity",
+#            "Sampen_acceleration"
+#                  ]
 
 
 
@@ -77,22 +77,22 @@ features_cols = ["Go", "GoError", "NoGo",
 # ]
 
 
-# features_cols = [
-#     "Sampen_velocity",
-#     "Acceleration_avg",
-#     "Fixation_std",
-#     "Sampen_dist",
-#     "Sampen_angle",
-#     "GazeObj_entropy",
-#     "Sampen_gaze_obj",
-#     "Spectral_entropy",
-#     "Go",
-#     "GoError",
-#     "NoGo",
-#     "NoGoError",
-#     "RT",
-#     "RTVar",
-# ]
+features_cols = [
+    "Sampen_velocity",
+    "Acceleration_avg",
+    "Fixation_std",
+    "Sampen_dist",
+    "Sampen_angle",
+    "GazeObj_entropy",
+    "Sampen_gaze_obj",
+    "Spectral_entropy",
+    "Go",
+    "GoError",
+    "NoGo",
+    "NoGoError",
+    "RT",
+    "RTVar",
+]
 
 for path in paths:
     files = glob.glob(path + "*_ar_params.npy")
@@ -150,7 +150,7 @@ X_norm = scaler.fit_transform(X, Y)
 X_spatial_norm = norm_scaller.fit_transform(X_spatial, Y)
 
 # combine features
-X_norm = np.concatenate([X_spatial_norm], -1)
+X_norm = np.concatenate([X_norm, X_spatial_norm], -1)
 # save features to csv
 np.savetxt("features.csv", X_norm, delimiter=",")
 np.savetxt("labels.csv", Y, delimiter=",")
@@ -186,27 +186,35 @@ for train_index, test_index in kf.split(X_norm, Y):
     Y_train = Y[train_index]
     Y_test = Y[test_index]
 
-    best_model = AdaBoostClassifier(learning_rate=best_params["learning_rate"],
-                                    base_estimator=DecisionTreeClassifier(criterion="entropy", max_depth=best_params["base_estimator__max_depth"], max_features=best_params["base_estimator__max_features"], max_leaf_nodes=best_params["base_estimator__max_leaf_nodes"],
-                                        class_weight="balanced",
-                                        random_state=0),
-                                    n_estimators=best_params["n_estimators"], random_state=0)
+    np.save("data_train"+str(fold)+".npy", X_train)
+    np.save("data_test" + str(fold) + ".npy", X_test)
 
-    # print(f[test_index])
-    best_model.fit(X_train, Y_train)  # fit the data into the model
-    score = best_model.score(X_test, Y_test)  # test the model with test data
-    acc.append(score)
+    np.save("label_train" + str(fold) + ".npy", Y_train)
+    np.save("label_test" + str(fold) + ".npy", Y_test)
 
-    fpr, tpr, _ = roc_curve(Y_test, best_model.predict_proba(X_test)[:, 1])
-    roc_auc = auc(fpr, tpr)
-    roc_auc_values.append(roc_auc)
+    fold+=1
 
-    mcc.append(matthews_corrcoef(Y_test, best_model.predict(X_test)))
-    # print(score)
-    # print(matthews_corrcoef(Y_test, best_model.predict(X_test)))  # matthews ccc
-    # print(roc_auc) #auc
-    print(classification_report(Y_test, best_model.predict(X_test)))  # compute precision recall and F1-score
-    print(confusion_matrix(Y_test, best_model.predict(X_test)))  # compute confusion matrix
+    # best_model = AdaBoostClassifier(learning_rate=best_params["learning_rate"],
+    #                                 base_estimator=DecisionTreeClassifier(criterion="entropy", max_depth=best_params["base_estimator__max_depth"], max_features=best_params["base_estimator__max_features"], max_leaf_nodes=best_params["base_estimator__max_leaf_nodes"],
+    #                                     class_weight="balanced",
+    #                                     random_state=0),
+    #                                 n_estimators=best_params["n_estimators"], random_state=0)
+    #
+    # # print(f[test_index])
+    # best_model.fit(X_train, Y_train)  # fit the data into the model
+    # score = best_model.score(X_test, Y_test)  # test the model with test data
+    # acc.append(score)
+    #
+    # fpr, tpr, _ = roc_curve(Y_test, best_model.predict_proba(X_test)[:, 1])
+    # roc_auc = auc(fpr, tpr)
+    # roc_auc_values.append(roc_auc)
+    #
+    # mcc.append(matthews_corrcoef(Y_test, best_model.predict(X_test)))
+    # # print(score)
+    # # print(matthews_corrcoef(Y_test, best_model.predict(X_test)))  # matthews ccc
+    # # print(roc_auc) #auc
+    # print(classification_report(Y_test, best_model.predict(X_test)))  # compute precision recall and F1-score
+    # print(confusion_matrix(Y_test, best_model.predict(X_test)))  # compute confusion matrix
 
 
     # plt.figure()
@@ -222,8 +230,8 @@ for train_index, test_index in kf.split(X_norm, Y):
     # plt.show()
     # print(f[test_index][Y_test !=best_model.predict(X_test)])
 
-for i in range(len(acc)):
-    print("%f, %f, %f" %  (acc[i], mcc[i], roc_auc_values[i]))  # average ACC
+# for i in range(len(acc)):
+#     print("%f, %f, %f" %  (acc[i], mcc[i], roc_auc_values[i]))  # average ACC
 # print(np.average(acc))
 # visualize tree
 # best_model = DecisionTreeClassifier(criterion="entropy", max_depth=7, max_leaf_nodes=5, random_state=0, class_weight="balanced")

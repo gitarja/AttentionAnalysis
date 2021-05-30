@@ -19,6 +19,9 @@ P_VALUE_COEFF_FILE = "D:\\usr\\pras\\data\\googledrive\\Research-Doctoral\\Exper
 
 #Plotting path
 PLOT_PATH = "D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Plot\\"
+
+#Features path
+FEATURES_PATH = "D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Features\\"
 #Constant
 MIN_D_N = 9
 MAX_LAG = 2
