@@ -1,5 +1,5 @@
 import unittest
-from SpationTemporalSimulation.DataFetch import DataFetch
+from DNNModels.DataFetch import DataFetch
 
 class MyTestCase(unittest.TestCase):
     def test_something(self):

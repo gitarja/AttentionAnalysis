@@ -3,22 +3,16 @@ import glob
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 import seaborn as sns
-from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
-from sklearn.ensemble import BaggingClassifier, AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from Conf.Settings import MAX_LAG, MIN_D_N, TYPICAL_DW_RESULTS_PATH, ASD_DW_RESULTS_PATH, ANALYSIS_RESULT_PATH
-from sklearn.feature_selection import mutual_info_classif
 from sklearn.metrics import classification_report, confusion_matrix, matthews_corrcoef, roc_curve, auc
 import pandas as pd
 from sklearn.neighbors import NeighborhoodComponentsAnalysis
-from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
-from sklearn.svm import SVC
 from scipy.stats import kurtosis, skew
-from sklearn.tree import export_graphviz
-import pydotplus
-from dtreeviz.trees import dtreeviz
-from io import StringIO
+
 import matplotlib.pyplot as plt
 
 sns.set_style("whitegrid")
@@ -39,6 +33,7 @@ typical_spatial_features = pd.read_csv(TYPICAL_DW_RESULTS_PATH + "summary\\summa
 asd_spatial_features = pd.read_csv(ASD_DW_RESULTS_PATH + "summary\\summary_response_new.csv")
 spatial_features_concat = pd.concat([typical_spatial_features, asd_spatial_features], sort=True)
 
+#all spatial features
 # features_cols = ["Go", "GoError", "NoGo",
 #            "NoGoError", "RT", "RTVar", "Trajectory Area",
 #            "Velocity_avg",
@@ -63,7 +58,7 @@ spatial_features_concat = pd.concat([typical_spatial_features, asd_spatial_featu
 
 
 
-
+# significant features
 # features_cols = [
 #     "Sampen_velocity",
 #     "Acceleration_avg",
@@ -76,7 +71,7 @@ spatial_features_concat = pd.concat([typical_spatial_features, asd_spatial_featu
 #
 # ]
 
-
+# significant features + performance
 features_cols = [
     "Sampen_velocity",
     "Acceleration_avg",
@@ -146,7 +141,6 @@ scaler = make_pipeline(norm_scaller,
 
 # transform features
 X_norm = scaler.fit_transform(X, Y)
-# X_norm = scaler.fit_transform(np.concatenate([X, X_spatial], -1), Y)
 X_spatial_norm = norm_scaller.fit_transform(X_spatial, Y)
 
 # combine features
@@ -167,9 +161,6 @@ base_model = AdaBoostClassifier(base_estimator=base_estimator,
 clf = GridSearchCV(base_model, parameters)
 clf.fit(X_norm, Y)
 best_params = clf.best_params_
-
-# print(clf.best_estimator_.feature_importances_)
-
 
 
 acc = []
@@ -194,50 +185,31 @@ for train_index, test_index in kf.split(X_norm, Y):
 
     fold+=1
 
-    # best_model = AdaBoostClassifier(learning_rate=best_params["learning_rate"],
-    #                                 base_estimator=DecisionTreeClassifier(criterion="entropy", max_depth=best_params["base_estimator__max_depth"], max_features=best_params["base_estimator__max_features"], max_leaf_nodes=best_params["base_estimator__max_leaf_nodes"],
-    #                                     class_weight="balanced",
-    #                                     random_state=0),
-    #                                 n_estimators=best_params["n_estimators"], random_state=0)
-    #
-    # # print(f[test_index])
-    # best_model.fit(X_train, Y_train)  # fit the data into the model
-    # score = best_model.score(X_test, Y_test)  # test the model with test data
-    # acc.append(score)
-    #
-    # fpr, tpr, _ = roc_curve(Y_test, best_model.predict_proba(X_test)[:, 1])
-    # roc_auc = auc(fpr, tpr)
-    # roc_auc_values.append(roc_auc)
-    #
-    # mcc.append(matthews_corrcoef(Y_test, best_model.predict(X_test)))
-    # # print(score)
-    # # print(matthews_corrcoef(Y_test, best_model.predict(X_test)))  # matthews ccc
-    # # print(roc_auc) #auc
-    # print(classification_report(Y_test, best_model.predict(X_test)))  # compute precision recall and F1-score
-    # print(confusion_matrix(Y_test, best_model.predict(X_test)))  # compute confusion matrix
+    best_model = AdaBoostClassifier(learning_rate=best_params["learning_rate"],
+                                    base_estimator=DecisionTreeClassifier(criterion="entropy", max_depth=best_params["base_estimator__max_depth"], max_features=best_params["base_estimator__max_features"], max_leaf_nodes=best_params["base_estimator__max_leaf_nodes"],
+                                        class_weight="balanced",
+                                        random_state=0),
+                                    n_estimators=best_params["n_estimators"], random_state=0) #create adaboost classifier with the optimized parameter values
+
+    # print(f[test_index])
+    best_model.fit(X_train, Y_train)  # fit the data into the model
+    score = best_model.score(X_test, Y_test)  # test the model with test data
+    acc.append(score)
+
+    fpr, tpr, _ = roc_curve(Y_test, best_model.predict_proba(X_test)[:, 1]) # compute fpr and tpr
+    roc_auc = auc(fpr, tpr)
+    roc_auc_values.append(roc_auc)
+
+    mcc.append(matthews_corrcoef(Y_test, best_model.predict(X_test)))
+    # print(score)
+    # print(matthews_corrcoef(Y_test, best_model.predict(X_test)))  # matthews ccc
+    # print(roc_auc) #auc
+    print(classification_report(Y_test, best_model.predict(X_test)))  # compute precision recall and F1-score
+    print(confusion_matrix(Y_test, best_model.predict(X_test)))  # compute confusion matrix
 
 
-    # plt.figure()
-    # lw = 2
-    # plt.plot(fpr, tpr, color='darkorange',
-    #          lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
-    # plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    # plt.xlim([0.0, 1.0])
-    # plt.ylim([0.0, 1.05])
-    # plt.xlabel('False Positive Rate')
-    # plt.ylabel('True Positive Rate')
-    # plt.legend(loc="lower right")
-    # plt.show()
-    # print(f[test_index][Y_test !=best_model.predict(X_test)])
+    print(f[test_index][Y_test !=best_model.predict(X_test)])
 
-# for i in range(len(acc)):
-#     print("%f, %f, %f" %  (acc[i], mcc[i], roc_auc_values[i]))  # average ACC
-# print(np.average(acc))
-# visualize tree
-# best_model = DecisionTreeClassifier(criterion="entropy", max_depth=7, max_leaf_nodes=5, random_state=0, class_weight="balanced")
-# best_model.fit(X_norm, Y)
-# print(best_model.feature_importances_)
-# dot_data = StringIO()
-# features_cols = ["C1", "C2", "C3", "C4", "C5"] + features_cols
-# viz = dtreeviz(best_model, X_norm, Y, target_name="class", feature_names=features_cols, class_names=['Typical', 'ASD'])
-# viz.save('tree_all_spatial.svg')
+for i in range(len(acc)):
+    print("%f, %f, %f" %  (acc[i], mcc[i], roc_auc_values[i]))  # average ACC
+print(np.average(acc))

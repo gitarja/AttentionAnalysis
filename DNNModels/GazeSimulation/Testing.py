@@ -1,4 +1,4 @@
-from SpationTemporalSimulation.NNModels.GazeModel import GazeModel, GazeEnsembleModel
+from DNNModels.NNModels.GazeModel import GazeModel, GazeEnsembleModel
 import pandas as pd
 import tensorflow as tf
 import numpy as np

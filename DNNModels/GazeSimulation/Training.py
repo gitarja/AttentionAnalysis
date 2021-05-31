@@ -1,5 +1,5 @@
-from SpationTemporalSimulation.NNModels.GazeModel import GazeModel, GazeEnsembleModel
-from SpationTemporalSimulation.DataFetch import DataFetch
+from DNNModels.NNModels.GazeModel import GazeModel, GazeEnsembleModel
+from DNNModels.DataFetch import DataFetch
 import tensorflow as tf
 
 # folder
