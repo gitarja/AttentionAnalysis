@@ -90,8 +90,8 @@ def gazePlot(x_ori, x_iltered, title):
 
 
 
-
-paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Typical-Hoikuen\\", "D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\High-risk\\"]
+paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Adults-Yokodai-2021-08-04\\gaze_head_data\\"]
+# paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Typical-Hoikuen\\", "D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\High-risk\\"]
 # paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Typical_Hoikuen\\"]
 
 normalize_col = ["ObjectX","ObjectY"]

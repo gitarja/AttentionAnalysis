@@ -7,7 +7,7 @@ from Utils.DataReader import DataReader
 import numpy as np
 from Utils.OutliersRemoval import OutliersRemoval
 from Conf.Settings import ASD_PATH, ASD_DW_PATH, ASD_DW_RESULTS_PATH, MIN_D_N, MAX_LAG, CUT_OFF, TYPICAL_PATH, \
-    TYPICAL_DW_PATH, TYPICAL_DW_RESULTS_PATH, AVG_WIN_SIZE, FREQ_GAZE, AREA_FIX_TH
+    TYPICAL_DW_PATH, TYPICAL_DW_RESULTS_PATH, AVG_WIN_SIZE, FREQ_GAZE, AREA_FIX_TH, ADULT_DW_PATH, ADULT_DW_RESULTS_PATH, ADULT_PATH
 from Utils.Lib import filterFixation
 import matplotlib.pyplot as plt
 from nolds import sampen
@@ -16,9 +16,14 @@ import warnings
 
 # set the processing
 # ASD or TYPICAL
-game_paths = [TYPICAL_PATH, ASD_PATH]
-gaze_paths = [TYPICAL_DW_PATH, ASD_DW_PATH]
-result_paths = [TYPICAL_DW_RESULTS_PATH, ASD_DW_RESULTS_PATH]
+# game_paths = [TYPICAL_PATH, ASD_PATH]
+# gaze_paths = [TYPICAL_DW_PATH, ASD_DW_PATH]
+# result_paths = [TYPICAL_DW_RESULTS_PATH, ASD_DW_RESULTS_PATH]
+
+#Adult
+game_paths = [ADULT_PATH]
+gaze_paths = [ADULT_DW_PATH]
+result_paths = [ADULT_DW_RESULTS_PATH]
 
 # Reader and removal
 reader = DataReader()
@@ -32,6 +37,7 @@ for path in zip(game_paths, gaze_paths, result_paths):
     game_path = path[0]
     gaze_path = path[1]
     result_path = path[2]
+    print(result_path)
 
     # read game data
 
