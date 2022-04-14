@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore")
 
 
 
-sns.set_style("whitegrid")
+sns.set_style("white")
 
 paths = [TYPICAL_DW_RESULTS_PATH, ASD_DW_RESULTS_PATH]
 asd_labels = pd.read_csv(ASD_PATH +  "labels.csv")
@@ -25,10 +25,17 @@ Label idx
 1 = ASD
 2 = ASD+AD
 '''
-group_labels = ["Typical", "ASD w/o AD", "ASD w/ AD"]
-group_colors = ["#66c2a5", "#8da0cb", "#e78ac3"]
+# group_labels = ["Typical", "ASD without ADHD", "ASD with ADHD"]
+# group_colors = ["#66c2a5", "#8da0cb", "#e78ac3"]
+# group_colors = ["#252525", "#737373", "#bdbdbd"] #grey_scale
+
+group_labels = ["Typical", "ASD"]
+# group_colors = ["#66c2a5", "#fc8d62"] #colorful
+group_colors = ["#1f97d5", "#25489d"] #colorful
+# group_colors = ["#252525", "#bdbdbd"] #grey_scale
 first_group_label = 0
 second_group_label = 1
+third_group_label = 2
 
 
 
@@ -84,22 +91,14 @@ for s in np.unique(subjects):
 X = np.concatenate(X_features, 0)
 Y = np.array(Y)
 responses = np.array(responses)
-print("-------------------------------------ANOVA------------------------------------------------")
-_, p_anova = f_classif(X, Y)
-print(p_anova)
-
-for i in range(len(labels)):
-    X_label = X[responses==i]
-    Y_label = Y[responses==i]
-    _, p_anova = f_classif(X_label, Y_label)
-    print(p_anova)
-print("-------------------------------------End-ANOVA------------------------------------------------")
 
 X_typical_all = X[Y == first_group_label]
-X_asd_all = X[Y == second_group_label]
+X_asd = X[Y == second_group_label]
+X_asd_ad = X[Y == third_group_label]
 
 response_typical = responses[Y == first_group_label]
 response_asd = responses[Y == second_group_label]
+response_asd_ad = responses[Y == third_group_label]
 ar_model = arModel(maxlag=MAX_LAG, min_len=MIN_D_N)
 
 
@@ -112,30 +111,18 @@ template = (" {}, {}, {}, {}, {}, {}, {}")
 
 print("-------------------------------------Average------------------------------------------------")
 X_typical = X_typical_all
-X_asd = X_asd_all
-
-# t-test between groups
-F_t, F_p = stats.ttest_ind(X_typical, X_asd)
+X_asd = X_asd
+X_asd_ad = X_asd_ad
 
 # mean and std
 mean_typical = np.mean(X_typical, 0)
 mean_asd = np.mean(X_asd, 0)
-std_typical = np.std(X_typical, 0)
-std_asd = np.std(X_asd, 0)
-
-for j in range(3):
-    # man-whitney between groups
-    mw = stats.mannwhitneyu(X_typical[: j], X_asd[: j])
-
-    # cohen
-    cohen = cohenD(X_typical[:, j], X_asd[:, j])
-    # print(template.format(F_p[j], p_typical[j], p_asd[j], mw[1], mw_typical[1], mw_asd[1], cohen, mean_typical[j], mean_asd[j], std_typical[j], std_asd[j]))
-    print(template.format(F_p[j], mw[1], cohen, mean_typical[j],
-                          mean_asd[j], std_typical[j], std_asd[j]))
+mean_asd_ad = np.mean(X_asd_ad, 0)
 
 # # extrapolating data all
 t_extra = ar_model.predict(np.mean(X_typical_all, 0), start=5, end=55) [5:] # extrapolation of typical
-a_extra = ar_model.predict(np.mean(X_asd_all, 0), start=5, end=55)[5: ]  # extrapolation of ASD
+a_extra = ar_model.predict(np.mean(X_asd, 0), start=5, end=55)[5: ]  # extrapolation of ASD
+a_ad_extra = ar_model.predict(np.mean(X_asd_ad, 0), start=5, end=55)[5: ]  # extrapolation of ASD
 
 fig, (ax1, ax2) = plt.subplots(2, 1)
 ax1.set_title("Average")
@@ -143,6 +130,8 @@ ax1.set_title("Average")
 idx_times = np.arange(0, len(t_extra), 1) / FREQ_GAZE
 ax1.plot(idx_times, t_extra, label=group_labels[first_group_label], color=group_colors[first_group_label], linewidth=1.5)
 ax1.plot(idx_times, a_extra, label=group_labels[second_group_label], color=group_colors[second_group_label], linewidth=1.5)
+if multi_class:
+    ax1.plot(idx_times, a_ad_extra, label=group_labels[third_group_label], color=group_colors[third_group_label], linewidth=1.5)
 ax1.set_ylim([0.0, 0.9])
 ax1.set_xlabel("Time(s)")
 ax1.set_ylabel("Distance")
@@ -150,9 +139,12 @@ ax1.legend()
 # plot autocorrelation function
 t_extra_diff = np.abs(np.diff(t_extra))
 a_extra_diff = np.abs(np.diff(a_extra))
+a_ad_extra_diff = np.abs(np.diff(a_ad_extra))
 print(str(np.mean(t_extra_diff)) + "," + str(np.mean(a_extra_diff)))
-ax2.plot(idx_times[1:], t_extra_diff, ".", label=group_labels[first_group_label], color=group_colors[first_group_label], linewidth=.5)
-ax2.plot(idx_times[1:], a_extra_diff, ".", label=group_labels[second_group_label], color=group_colors[second_group_label], linewidth=.5)
+ax2.plot(idx_times[1:], t_extra_diff, ".", label=group_labels[first_group_label], color=group_colors[first_group_label], linewidth=1.5)
+ax2.plot(idx_times[1:], a_extra_diff,".", label=group_labels[second_group_label], color=group_colors[second_group_label], linewidth=1.5)
+if multi_class:
+    ax2.plot(idx_times[1:], a_ad_extra_diff,".", label=group_labels[third_group_label], color=group_colors[third_group_label], linewidth=1.5)
 ax2.set_ylim([0.0, 0.06])
 ax2.set_xlabel("Lag")
 ax2.set_ylabel("Gaze-adj velocity")
@@ -162,35 +154,15 @@ plt.savefig(PLOT_RESULT_PATH +  "average.eps")
 #Analyze per label
 
 for i in range(len(labels)):
-    print("-------------------------------------"+labels[i]+"------------------------------------------------")
-    X_typical = X_typical_all[response_typical==i]
-    X_asd = X_asd_all[response_asd==i]
-
-    #t-test between groups
-    F_t, F_p = stats.ttest_ind(X_typical, X_asd)
-
 
     # mean and std
-    mean_typical = np.mean(X_typical, 0)
-    mean_asd = np.mean(X_asd, 0)
-    std_typical = np.std(X_typical, 0)
-    std_asd = np.std(X_asd, 0)
-
-
-    for j in range(3):
-        # man-whitney between groups
-        mw = stats.mannwhitneyu(X_typical[: j], X_asd[: j])
-
-        #cohen
-        cohen = cohenD(X_typical[:, j], X_asd[:, j])
-        # print(template.format(F_p[j], p_typical[j], p_asd[j], mw[1], mw_typical[1], mw_asd[1], cohen, mean_typical[j], mean_asd[j], std_typical[j], std_asd[j]))
-        print(template.format( F_p[j],  mw[1],  cohen, mean_typical[j],
-                              mean_asd[j], std_typical[j], std_asd[j]))
-
-    #
+    mean_typical = np.mean(X_typical_all[response_typical==i], 0)
+    mean_asd = np.mean( X_asd[response_asd==i], 0)
+    mean_asd_ad = np.mean( X_asd_ad[response_asd_ad==i], 0)
     # #extrapolating data
     t_extra = ar_model.predict(mean_typical, start=5, end=55)[5:]  # extrapolation of typical
     a_extra = ar_model.predict(mean_asd, start=5, end=55)[5:]  # extrapolation of ASD
+    a_ad_extra =  ar_model.predict(mean_asd_ad, start=5, end=55)[5:]  # extrapolation of ASD w/ AD
     # print(str(np.min(t_extra)) + ","+ str(np.min(a_extra)))
     plt.figure(i)
     fig, (ax1, ax2) = plt.subplots(2, 1)
@@ -199,6 +171,9 @@ for i in range(len(labels)):
     idx_times = np.arange(0, len(t_extra), 1) / FREQ_GAZE
     ax1.plot(idx_times, t_extra, label=group_labels[first_group_label], color=group_colors[first_group_label],linewidth=1.5)
     ax1.plot(idx_times, a_extra, label=group_labels[second_group_label], color=group_colors[second_group_label],linewidth=1.5)
+    if multi_class:
+        ax1.plot(idx_times, a_ad_extra, label=group_labels[third_group_label], color=group_colors[third_group_label],
+             linewidth=1.5)
     ax1.set_ylim([0.0, 0.9])
     ax1.set_xlabel("Time(s)")
     ax1.set_ylabel("Distance")
@@ -206,9 +181,12 @@ for i in range(len(labels)):
     #plot autocorrelation function
     t_extra_diff = np.abs(np.diff(t_extra))
     a_extra_diff = np.abs(np.diff(a_extra))
+    a_ad_extra_diff = np.abs(np.diff(a_ad_extra))
     print(str(np.mean(t_extra_diff)) + "," + str(np.mean(a_extra_diff)))
-    ax2.plot(idx_times[1:], t_extra_diff, ".",  label=group_labels[first_group_label], color=group_colors[first_group_label], linewidth=.5)
-    ax2.plot(idx_times[1:], a_extra_diff, ".", label=group_labels[second_group_label], color=group_colors[second_group_label], linewidth=.5)
+    ax2.plot(idx_times[1:], t_extra_diff,".",  label=group_labels[first_group_label], color=group_colors[first_group_label], linewidth=1.5)
+    ax2.plot(idx_times[1:], a_extra_diff,".", label=group_labels[second_group_label], color=group_colors[second_group_label], linewidth=1.5)
+    if multi_class:
+        ax2.plot(idx_times[1:], a_ad_extra_diff,".", label=group_labels[third_group_label], color=group_colors[third_group_label], linewidth=1.5)
     ax2.set_ylim([0.0, 0.06])
     ax2.set_xlabel("Time(s)")
     ax2.set_ylabel("Decreasing Rate")
@@ -217,14 +195,6 @@ for i in range(len(labels)):
     plt.savefig(PLOT_RESULT_PATH + labels[i] + ".eps")
     # plt.show()
 
-    #plotting the data
-    # for j in range(3):
-    #     plt.figure(j)
-    #     plt.boxplot([X_typical[:, j], X_asd[:, j]], notch=True, widths=0.25, positions=[0.75, 1.25], \
-    #             labels=['Typical', 'Diagnoised'])
-    #     plt.title("Coefficient " + str(j+1))
-    #     plt.savefig(PLOT_RESULT_PATH+"Coefficient " + str(j+1)+".png")
-    #     plt.show()
 
 
 

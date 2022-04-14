@@ -90,7 +90,7 @@ def gazePlot(x_ori, x_iltered, title):
 
 
 
-paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Adults-Yokodai-2021-08-04\\gaze_head_data\\"]
+paths = ["D:\\usr\\pras\\data\\AttentionTestData\\PerceptualLearning\\AttentionTestResults\\csv\\"]
 # paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Typical-Hoikuen\\", "D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\High-risk\\"]
 # paths = ["D:\\usr\\pras\\data\\AttentionTestData\\Collaboration\\Typical_Hoikuen\\"]
 
@@ -104,7 +104,7 @@ for path in paths:
 
         data = pd.read_csv(file)
         data = data[data["Time"].values > 1]
-        down_sample = data.loc[data.index % 2 == 1]
+        down_sample = data.loc[data.index % 2 == 1] ## from 144 to 72Hz or 100 to 50Hz
 
         down_avg_data = pd.DataFrame(columns=down_sample.columns.values)
         down_sample = down_sample[(down_sample.GazeX >= 0) & (down_sample.GazeY >= 0)]

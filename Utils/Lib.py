@@ -8,7 +8,15 @@ from scipy.signal import welch
 import warnings
 from scipy.signal._savitzky_golay import savgol_filter
 from statsmodels.tsa.stattools import acf
+
+
+
+
 def createDir(dir):
+    '''
+    :param dir: directory
+    :return: null
+    '''
     if not path.exists(dir):
         mkdir(dir)
 
@@ -30,22 +38,35 @@ def timeDiff(x1, x2):
 
 def euclidianDist(x1, x2):
     ''' compute euclidian distance of two points
-    :param x1:
-    :param x2:
-    :return:
+    :param x1: 1st point
+    :param x2: 2nd point
+    :return: euclidian distance
     '''
     dist =np.sqrt(np.sum(np.power(x1-x2, 2), -1))
     return dist
 
-def euclidianDistT(x, time=None, skip=3):
+def hellingerDist(x1, x2):
+    '''
+    compute hellinger distance between two distributions [0-1]
+    :param x1: 1st distribution
+    :param x2: 2nd distribution
+    :return: hellinger distance
+    ref: https://en.wikipedia.org/wiki/Hellinger_distance
+    '''
+    bc = np.sum(np.sqrt(x1 * x2), 1)
+    dist = np.sqrt( 1 - bc)
+
+    return dist
+
+def euclidianDistT(x, time=None, stride=3):
     ''' compute the euclidian distance for the series
-    :param x: must be series > skip + 3
+    :param x: must be series > stride + 3
     :param skip:
     :return:
     '''
-    if len(x) < (skip + 3):
-        raise ValueError("length of x must be greater than skip + 3")
-    dist = np.array([euclidianDist(x[i], x[i-skip]) for i in range(skip, len(x), 1)])
+    if len(x) < (stride + 3):
+        raise ValueError("length of x must be greater than stride + 3")
+    dist = np.array([euclidianDist(x[i], x[i-stride]) for i in range(stride, len(x), 1)])
     return dist
 
 
@@ -108,19 +129,27 @@ def computeAcceleration(time, velocity, n, time_constant=False):
 
     return accs
 
-def computeVelocityAccel(time, gaze, n, poly):
+def computeVelocityAccel(gaze, n, poly):
+    '''
+    :param gaze: gaze data
+    :param n: length of sliding window
+    :param poly: order of polynominal
+    :return: velocity and acceleration of gaze computed using Savitzky-Golay filter
+    Velocity is the first derivative of the data
+    Acceleration is the second derivative of the data
+
+    Ref: https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter
+    '''
     # x_filtered
     # first derivative
-    gaze_x_d1 = savgol_filter(gaze[:, 0], n, polyorder=poly, deriv=1)
-    gaze_y_d1 = savgol_filter(gaze[:, 1], n, polyorder=poly, deriv=1)
-    # time_d1 =  savgol_filter(time, n, polyorder=poly, deriv=1)
+    gaze_x_d1 = savgol_filter(gaze[:, 0], window_length=n, polyorder=poly, deriv=1)
+    gaze_y_d1 = savgol_filter(gaze[:, 1], window_length=n, polyorder=poly, deriv=1)
 
     gaze_d1 =np.array([gaze_x_d1, gaze_y_d1]).transpose()
 
     #second derivative
-    gaze_x_d2 = savgol_filter(gaze[:, 0], n, polyorder=poly, deriv=2)
-    gaze_y_d2 = savgol_filter(gaze[:, 1], n, polyorder=poly, deriv=2)
-    # time_d2 =  savgol_filter(savgol_filter(time, n, polyorder=poly, deriv=0), n, polyorder=poly, deriv=1)
+    gaze_x_d2 = savgol_filter(gaze[:, 0], window_length=n, polyorder=poly, deriv=2)
+    gaze_y_d2 = savgol_filter(gaze[:, 1], window_length=n, polyorder=poly, deriv=2)
 
     gaze_d2 = np.array([gaze_x_d2, gaze_y_d2]).transpose()
 
@@ -135,13 +164,13 @@ def computeVelocityAccel(time, gaze, n, poly):
 
 
 
-def relu(data, max=1.):
+def threshold(data, max_val=1.):
     ''' relu activation function
     :param data: must be a series
     :param max:
     :return:
     '''
-    data[data > max] = max
+    data[data > max_val] = max_val
     return data
 
 
@@ -153,7 +182,7 @@ def anglesEstimation(data, skip=3):
     '''
     angles = np.array(
         [np.dot(data[i, :], data[i - skip, :]) / (np.linalg.norm(data[i, :]) * np.linalg.norm(data[i - skip, :])) for i in range(skip, len(data), 1)])
-    angles = np.arccos(relu(angles))
+    angles = np.arccos(threshold(angles))
     return angles
 
 
@@ -185,8 +214,7 @@ def arModel(min_len=20, maxlag=4):
     prior = np.arange(start, end, (end - start) / min_len)
     model = AR(prior)
     model.fit(maxlag=maxlag)
-    # model = AutoReg(prior, lags=maxlag)
-    # model.fit()
+
     return model
 
 def filterFixation(fixation):
@@ -209,13 +237,22 @@ def filterFixation(fixation):
 
     return fixation_list
 
-#compute cutoff to remove outlier
 def computeCutoff(x, c=2):
+    '''
+    Remove outliers from response time data using absolute deviation around median
+    :param x: sequence of data
+    :param c: cutoff point
+    :return: cleaned data
+    Ref: https://doi.org/10.1016/j.jesp.2013.03.013
+    '''
     mad = 1.4826 * np.median(np.absolute(x - np.median(x)))
     return np.median(x)  - (c * mad)
 
-#only take gaze when the stimulus appears
 def removeNoObjectData(numpyData):
+    '''
+    :param numpyData: sequence of gaze, head, and response data
+    :return: data when stimuli appear
+    '''
     return numpyData[numpyData[:,1]!= -1, :]
 
 def gazeEntropy(xy, relative=True):
@@ -244,6 +281,12 @@ def spectralEntropy(xy, fs=72):     # defaults to downsampled frequency
 
 
 def cohenD(a, b):
+    '''
+    Compute cohen coefficient of paired data
+    :param a: 1st data
+    :param b: 2nd data
+    :return: coefficient
+    '''
     n_a = len(a)
     n_b = len(b)
     return (np.mean(a)-np.mean(b))/\

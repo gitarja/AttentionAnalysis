@@ -190,6 +190,20 @@ class DataProcessor:
 
         return np.concatenate([reponseTimesMean, reponseTimesStd], axis=-1)
 
+
+
+    def computeResponseTimeSession(self, response, num_stimulus=18):
+        #num_stimulus the number of stimulus in each session
+        groupConsRes = np.floor(response.index // num_stimulus).astype(int)
+        responseTimes = (response.ResponseTime - response.SpawnTime)
+        responseTimes = responseTimes[responseTimes >= 0]
+        # group by response times for each one minute and compute their avg and std
+        reponseTimesMean = responseTimes.groupby(groupConsRes).mean().values.reshape(-1, 1)
+        reponseTimesStd = responseTimes.groupby(groupConsRes).std().values.reshape(-1, 1)
+        # reponseTimesStd = responseTimes.groupby(self.groupConsRes).apply(self.bernouliSTD).values.reshape(-1, 1)
+
+        return np.concatenate([reponseTimesMean, reponseTimesStd], axis=-1)
+
     def computeResponseTimeNS(self, response):
         responseTimes = (response.ResponseTime - response.SpawnTime)
         groupedResponseTimes = responseTimes.groupby(self.groupCons)

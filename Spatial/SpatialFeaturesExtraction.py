@@ -11,7 +11,6 @@ from Conf.Settings import ASD_PATH, ASD_DW_PATH, ASD_DW_RESULTS_PATH, MIN_D_N, M
 from Utils.Lib import filterFixation
 import matplotlib.pyplot as plt
 from nolds import sampen
-from sklearn.neighbors import KernelDensity
 import warnings
 
 # set the processing
@@ -20,10 +19,16 @@ import warnings
 # gaze_paths = [TYPICAL_DW_PATH, ASD_DW_PATH]
 # result_paths = [TYPICAL_DW_RESULTS_PATH, ASD_DW_RESULTS_PATH]
 
+#New data
+game_paths = ["D:\\usr\\pras\\data\\AttentionTestData\\AttentionTest-2021-11-01\\csv_files\\"]
+gaze_paths = ["D:\\usr\\pras\\data\\AttentionTestData\\AttentionTest-2021-11-01\\csv_files\\cvs_down_files\\"]
+result_paths = ["D:\\usr\\pras\\data\\AttentionTestData\\AttentionTest-2021-11-01\\csv_files\\summary\\"]
+
+
 #Adult
-game_paths = [ADULT_PATH]
-gaze_paths = [ADULT_DW_PATH]
-result_paths = [ADULT_DW_RESULTS_PATH]
+# game_paths = [ADULT_PATH]
+# gaze_paths = [ADULT_DW_PATH]
+# result_paths = [ADULT_DW_RESULTS_PATH]
 
 # Reader and removal
 reader = DataReader()
